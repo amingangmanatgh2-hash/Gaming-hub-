@@ -109,7 +109,34 @@ tr:hover td{background:rgba(255,255,255,.03)}
     </div>
 
     <div class="card section">
+      <h2>🧬 پیکربندی ربات و MTProto</h2>
+      <table>
+        <tbody>
+          <tr><td>🤖 ربات</td><td dir="ltr" id="cBot">—</td></tr>
+          <tr><td>👑 آیدی مالک</td><td dir="ltr" id="cOwner">—</td></tr>
+          <tr><td>🧬 API ID</td><td dir="ltr" id="cApiId">—</td></tr>
+          <tr><td>🧬 API Hash</td><td dir="ltr"><span id="cApiHash">—</span>
+            <button class="btn btn-ghost mini" style="margin-right:8px" onclick="toggleHash()">👁 نمایش/مخفی</button></td></tr>
+          <tr><td>🔗 وب‌هوک</td><td dir="ltr" style="font-size:11px;word-break:break-all" id="cWebhook">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card section">
+      <h2>📜 تراکنش‌های اخیر الماس</h2>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>زمان</th><th>کاربر</th><th>مقدار</th><th>دلیل</th></tr></thead>
+        <tbody id="txbody"><tr><td colspan="4" style="text-align:center;color:#64748b">—</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card section">
       <h2>👥 لیست کاربران</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input id="search" placeholder="🔍 جستجو بر اساس نام، یوزرنیم یا آیدی..." oninput="applySearch()">
+      </div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr><th>آیدی</th><th>نام</th><th>یوزرنیم</th><th>💎</th><th>سلف</th><th>ماژول‌ها</th><th>عملیات</th></tr></thead>
@@ -132,7 +159,7 @@ function doLogin(){
   KEY=qs('keyIn').value.trim();
   if(!KEY)return toast('کلید را وارد کنید');
   api('/api/users').then(function(j){
-    if(j.ok){try{localStorage.setItem('adminKey',KEY)}catch(_){}show(true);render(j)}
+    if(j.ok){try{localStorage.setItem('adminKey',KEY)}catch(_){}show(true);render(j);loadConfig();loadTx()}
     else{toast('❌ کلید نامعتبر است');}
   });
 }
@@ -143,9 +170,13 @@ function render(j){
   qs('sTotal').textContent=fa(j.stats.total);
   qs('sActive').textContent=fa(j.stats.active);
   qs('sDiamonds').textContent=fa(j.stats.diamonds);
+  ALL_USERS=j.users.sort(function(a,b){return b.diamonds-a.diamonds});
+  applySearch();
+}
+function renderRows(users){
   var tb=qs('tbody');tb.innerHTML='';
-  if(!j.users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">هنوز کاربری ثبت نشده — ربات را در تلگرام /start کنید</td></tr>';return}
-  j.users.sort(function(a,b){return b.diamonds-a.diamonds}).forEach(function(u){
+  if(!users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">هنوز کاربری ثبت نشده — ربات را در تلگرام /start کنید</td></tr>';return}
+  users.forEach(function(u){
     var tr=document.createElement('tr');
     tr.innerHTML='<td dir="ltr">'+u.id+'</td><td>'+escp(u.name)+'</td><td dir="ltr">'+(u.username?'@'+escp(u.username):'—')+'</td>'+
       '<td><b>'+fa(u.diamonds)+'</b></td>'+
@@ -160,7 +191,48 @@ function render(j){
   });
 }
 function escp(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-function load(){api('/api/users').then(function(j){if(j.ok)render(j);else show(false)})}
+var ALL_USERS=null,HASH_FULL='',HASH_MASK='',HASH_SHOWN=false;
+function applySearch(){
+  if(!ALL_USERS)return;
+  var q=qs('search').value.trim().toLowerCase();
+  var filtered=!q?ALL_USERS:ALL_USERS.filter(function(u){
+    return String(u.id).indexOf(q)>-1||(u.name||'').toLowerCase().indexOf(q)>-1||(u.username||'').toLowerCase().indexOf(q)>-1;
+  });
+  renderRows(filtered);
+}
+function toggleHash(){
+  HASH_SHOWN=!HASH_SHOWN;
+  qs('cApiHash').textContent=HASH_SHOWN?(HASH_FULL||'—'):(HASH_MASK||'—');
+}
+var TX_LABELS={activation:'⚡️ فعال‌سازی سلف',daily:'📆 نگهداری روزانه',transfer_in:'📥 دریافت انتقال',
+  transfer_out:'📤 ارسال انتقال',admin:'👑 مدیریت',daily_gift:'🎁 جایزه روزانه',wheel:'🎡 گردونه شانس'};
+function loadConfig(){
+  api('/api/config').then(function(j){
+    if(!j.ok)return;
+    qs('cBot').textContent='@'+(j.botUsername||'—');
+    qs('cOwner').textContent=j.ownerId||'—';
+    qs('cApiId').textContent=j.apiId||'ثبت نشده';
+    HASH_FULL=j.apiHash||'';HASH_MASK=j.apiHashMasked||'ثبت نشده';
+    qs('cApiHash').textContent=HASH_MASK;
+    qs('cWebhook').textContent=j.webhookUrl||'—';
+  });
+}
+function loadTx(){
+  api('/api/transactions').then(function(j){
+    if(!j.ok)return;
+    var tb=qs('txbody');tb.innerHTML='';
+    if(!j.transactions.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#64748b">هنوز تراکنشی ثبت نشده</td></tr>';return}
+    j.transactions.slice(0,30).forEach(function(t){
+      var tr=document.createElement('tr');
+      var d=new Date(t.t).toLocaleString('fa-IR',{timeZone:'Asia/Tehran',hour:'2-digit',minute:'2-digit',month:'2-digit',day:'2-digit'});
+      tr.innerHTML='<td>'+d+'</td><td dir="ltr">'+t.id+'</td>'+
+        '<td style="color:'+(t.amount>=0?'#4ade80':'#f87171')+';font-weight:700">'+(t.amount>=0?'+':'')+fa(t.amount)+' 💎</td>'+
+        '<td>'+(TX_LABELS[t.reason]||t.reason)+'</td>';
+      tb.appendChild(tr);
+    });
+  });
+}
+function load(){api('/api/users').then(function(j){if(j.ok){render(j);loadConfig();loadTx()}else show(false)})}
 function quick(id,amt){api('/api/diamonds',{method:'POST',body:JSON.stringify({id:id,amount:amt})}).then(function(j){toast(j.ok?'✅ انجام شد':'❌ خطا');load()})}
 function giveDiamonds(){
   var id=Number(qs('dId').value),amt=Number(qs('dAmt').value);
@@ -180,7 +252,7 @@ function runCron(){api('/api/run-cron',{method:'POST'}).then(function(j){toast(j
   var k=null;try{k=localStorage.getItem('adminKey')}catch(_){}
   var q=new URLSearchParams(location.search).get('key');
   KEY=q||k;
-  if(KEY){api('/api/users').then(function(j){if(j.ok){show(true);render(j)}else{show(false)}})}
+  if(KEY){api('/api/users').then(function(j){if(j.ok){show(true);render(j);loadConfig();loadTx()}else{show(false)}})}
   else show(false);
 })();
 </script>

@@ -134,6 +134,21 @@ async function listUsers(env) {
   return users;
 }
 
+/** لاگ تراکنش‌های الماس (۱۲۰ مورد آخر) */
+async function logTx(env, userId, amount, reason) {
+  try {
+    const raw = await env.KV.get('txlog');
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.unshift({ t: Date.now(), id: userId, amount, reason });
+    if (arr.length > 120) arr.length = 120;
+    await env.KV.put('txlog', JSON.stringify(arr));
+  } catch (_) {}
+}
+async function getTxLog(env) {
+  const raw = await env.KV.get('txlog');
+  return raw ? JSON.parse(raw) : [];
+}
+
 /** آینه اختیاری D1 — اگر binding DB تعریف نشده باشد بی‌صدا رد می‌شود. */
 async function d1MirrorUser(env, u) {
   if (!env.DB) return;
@@ -328,6 +343,8 @@ const COMMANDS = [
       if (!tu) return ctx.reply('❌ کاربر مقصد یافت نشد (باید قبلاً ربات را استارت کرده باشد).');
       ctx.user.diamonds -= amount; tu.diamonds += amount;
       await saveUser(ctx.env, ctx.user); await saveUser(ctx.env, tu);
+      await logTx(ctx.env, ctx.user.id, -amount, 'transfer_out');
+      await logTx(ctx.env, target, amount, 'transfer_in');
       await send(ctx.cfg, target, `💎 <b>${faNum(amount)}</b> الماس از طرف <code>${ctx.user.id}</code> دریافت کردید!\nموجودی جدید: <b>${faNum(tu.diamonds)}</b>`);
       return ctx.reply(`✅ <b>${faNum(amount)}</b> الماس به <code>${target}</code> منتقل شد.\n💎 موجودی شما: <b>${faNum(ctx.user.diamonds)}</b>`);
     },
@@ -643,6 +660,44 @@ const COMMANDS = [
       return ctx.reply(`🗣 متن «${esc(ctx.args)}» به صف تبدیل گفتار اضافه شد؛ ویس به‌زودی ارسال می‌شود. 🎙`);
     },
   },
+  {
+    key: 'daily_gift', name: 'جایزه روزانه', cat: 'fun', emoji: '🎁',
+    async run(ctx) {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: TEHRAN_TZ }).format(new Date());
+      if (ctx.user.lastGiftDay === today) return ctx.reply('🎁 جایزه امروز را گرفته‌اید! فردا دوباره سر بزنید ⏳');
+      const amt = 5 + Math.floor(Math.random() * 6); // ۵ تا ۱۰ الماس
+      ctx.user.lastGiftDay = today;
+      ctx.user.diamonds += amt;
+      await saveUser(ctx.env, ctx.user);
+      await logTx(ctx.env, ctx.user.id, amt, 'daily_gift');
+      return ctx.reply(`🎁 <b>جایزه روزانه:</b> ${faNum(amt)} الماس! 💎\nموجودی: <b>${faNum(ctx.user.diamonds)}</b>`);
+    },
+  },
+  {
+    key: 'wheel', name: 'گردونه شانس', cat: 'fun', emoji: '🎡',
+    async run(ctx) {
+      const COST = 3;
+      if (ctx.user.diamonds < COST) return ctx.reply(`🎡 برای چرخاندن گردونه ${faNum(COST)} الماس لازم است!`);
+      const prize = [0, 0, 1, 2, 3, 5, 8, 10][Math.floor(Math.random() * 8)];
+      ctx.user.diamonds += prize - COST;
+      await saveUser(ctx.env, ctx.user);
+      await logTx(ctx.env, ctx.user.id, prize - COST, 'wheel');
+      const msg = prize === 0 ? '💨 پوچ! شانس بعدی...'
+        : prize <= COST ? `😅 ${faNum(prize)} الماس — تقریباً مساوی!`
+        : `🎉 بردی! <b>${faNum(prize)}</b> الماس!`;
+      return ctx.reply(`🎡 <b>گردونه شانس</b> (هزینه ${faNum(COST)} 💎)\n${msg}\n💎 موجودی: <b>${faNum(ctx.user.diamonds)}</b>`);
+    },
+  },
+  {
+    key: 'leaderboard', name: 'تاپ الماس', cat: 'fun', emoji: '🏆', aliases: ['لیدربورد'],
+    async run(ctx) {
+      const users = await listUsers(ctx.env);
+      const top = users.sort((a, b) => b.diamonds - a.diamonds).slice(0, 10);
+      const medals = ['🥇', '🥈', '🥉'];
+      return ctx.reply('🏆 <b>تاپ الماس — ۱۰ نفر برتر</b>\n━━━━━━━━━━━━━━━\n' +
+        top.map((u, i) => `${medals[i] || '▫️'} ${esc(u.name)} — <b>${faNum(u.diamonds)}</b> 💎${u.selfActive ? ' 🟢' : ''}`).join('\n'));
+    },
+  },
   toggleCmd('premium_emoji', 'ایموجی پرمیوم', 'fun', '💠'),
   toggleCmd('story_challenge', 'چالش استوری', 'fun', '📸'),
   {
@@ -723,6 +778,7 @@ async function handleMessage(env, cfg, msg) {
     if (!tu) { tu = defaultUser(target); await addToIndex(env, target); }
     tu.diamonds = Math.max(0, tu.diamonds + amount);
     await saveUser(env, tu);
+    await logTx(env, target, amount, 'admin');
     await send(cfg, target, amount >= 0
       ? `👑 مالک <b>${faNum(amount)}</b> الماس برای شما واریز کرد! 💎\nموجودی: <b>${faNum(tu.diamonds)}</b>`
       : `👑 مالک <b>${faNum(-amount)}</b> الماس از حساب شما کسر کرد.\nموجودی: <b>${faNum(tu.diamonds)}</b>`).catch?.(() => {});
@@ -749,7 +805,7 @@ async function handleMessage(env, cfg, msg) {
   const found = matchCommand(text);
   if (found) {
     // دستورات (به‌جز مدیریت سلف/اطلاعات/انتقال الماس) فقط با سلفِ روشن کار می‌کنند
-    const freeKeys = ['selfmanage', 'info', 'transfer', 'ping', 'miniapps'];
+    const freeKeys = ['selfmanage', 'info', 'transfer', 'ping', 'miniapps', 'daily_gift', 'wheel', 'leaderboard'];
     if (!user.selfActive && !freeKeys.includes(found.cmd.key)) {
       return send(cfg, chatId,
         '🔴 سلف شما خاموش است!\nبرای استفاده از دستورات، ابتدا سلف را روشن کنید:\n«مدیریت سلف» یا دکمه ⚙️ در پنل.',
@@ -835,6 +891,7 @@ async function handleCallback(env, cfg, cb) {
       user.selfActivatedAt = Date.now();
       user.lastChargeAt = Date.now();
       await saveUser(env, user);
+      await logTx(env, user.id, -ECON.ACTIVATION_COST, 'activation');
       await edit(
         `🟢 <b>سلف شما روشن شد!</b>\n━━━━━━━━━━━━━━━\n💎 ${faNum(ECON.ACTIVATION_COST)} الماس هزینه فعال‌سازی کسر شد.\n💎 موجودی: <b>${faNum(user.diamonds)}</b>\n📆 هر ۲۴ ساعت ${faNum(ECON.DAILY_COST)} الماس هزینه نگهداری کسر می‌شود.`,
         kbSelfManage(user));
@@ -912,6 +969,7 @@ async function runDailyCharge(env) {
       u.lastChargeAt = Date.now();
       charged++;
       await saveUser(env, u);
+      await logTx(env, u.id, -ECON.DAILY_COST, 'daily');
       if (u.diamonds < ECON.DAILY_COST) {
         await send(cfg, u.id, `⚠️ موجودی شما (${faNum(u.diamonds)} 💎) برای شارژ فردا کافی نیست!\nبرای جلوگیری از خاموشی سلف، الماس تهیه کنید. ${BRAND.HELPER}`).catch?.(() => {});
       }
@@ -956,8 +1014,12 @@ async function apiSetup(env, request) {
   try { body = await request.json(); } catch { return json({ ok: false, error: 'bad_json' }, 400); }
   const botToken = String(body.botToken || '').trim();
   const ownerId = String(body.ownerId || '').trim();
+  const apiId = String(body.apiId || '').trim();
+  const apiHash = String(body.apiHash || '').trim();
   if (!/^\d+:[\w-]{30,}$/.test(botToken)) return json({ ok: false, error: 'invalid_token_format' }, 400);
   if (!/^\d{4,15}$/.test(ownerId)) return json({ ok: false, error: 'invalid_owner_id' }, 400);
+  if (!/^\d{1,10}$/.test(apiId)) return json({ ok: false, error: 'invalid_api_id' }, 400);
+  if (!/^[a-fA-F0-9]{32}$/.test(apiHash)) return json({ ok: false, error: 'invalid_api_hash' }, 400);
 
   // ۱) اعتبارسنجی توکن
   const me = await tg(botToken, 'getMe');
@@ -978,9 +1040,9 @@ async function apiSetup(env, request) {
   });
   if (!wh.ok) return json({ ok: false, error: 'webhook_failed', detail: wh.description }, 400);
 
-  // ۴) ذخیره امن کانفیگ
+  // ۴) ذخیره امن کانفیگ (توکن + API ID / API Hash مخصوص MTProto)
   const cfg = {
-    botToken, ownerId, adminKey, webhookSecret,
+    botToken, ownerId, apiId, apiHash, adminKey, webhookSecret,
     botUsername: me.result.username, configuredAt: Date.now(),
   };
   await saveConfig(env, cfg);
@@ -996,13 +1058,15 @@ async function apiSetup(env, request) {
   await send(cfg, ownerId, [
     `👑 <b>${BRAND.BOT_NAME} راه‌اندازی شد!</b>`, '━━━━━━━━━━━━━━━',
     `🤖 ربات: @${me.result.username}`,
+    `🧬 API ID: <code>${apiId}</code>`,
+    `🧬 API Hash: <code>${apiHash.slice(0, 6)}••••••${apiHash.slice(-4)}</code>`,
     `🌐 پنل وب: ${origin}/panel`,
     `🔑 کلید مدیریت: <code>${adminKey}</code>`,
     `💎 ${faNum(1000)} الماس اولیه برای شما شارژ شد.`,
     '', 'برای شروع /start را بزنید.',
   ].join('\n')).catch?.(() => {});
 
-  return json({ ok: true, botUsername: me.result.username, adminKey, panelUrl: origin + '/panel', webhookUrl });
+  return json({ ok: true, botUsername: me.result.username, adminKey, panelUrl: origin + '/panel', webhookUrl, apiId });
 }
 
 async function apiUsers(env, request) {
@@ -1034,6 +1098,7 @@ async function apiDiamonds(env, request) {
   if (!u) { u = defaultUser(id); await addToIndex(env, id); }
   u.diamonds = Math.max(0, u.diamonds + amount);
   await saveUser(env, u);
+  await logTx(env, id, amount, 'admin');
   await send(cfg, id, amount >= 0
     ? `👑 مدیریت <b>${faNum(amount)}</b> الماس برای شما واریز کرد! 💎 موجودی: <b>${faNum(u.diamonds)}</b>`
     : `👑 مدیریت <b>${faNum(-amount)}</b> الماس کسر کرد. موجودی: <b>${faNum(u.diamonds)}</b>`).catch?.(() => {});
@@ -1065,6 +1130,29 @@ async function apiBroadcast(env, request) {
     if (r.ok) sent++;
   }
   return json({ ok: true, sent, total: users.length });
+}
+
+async function apiConfig(env, request) {
+  const { err, cfg } = await requireAdmin(env, request);
+  if (err) return err;
+  const origin = new URL(request.url).origin;
+  return json({
+    ok: true,
+    botUsername: cfg.botUsername,
+    ownerId: cfg.ownerId,
+    apiId: cfg.apiId || null,
+    apiHash: cfg.apiHash || null,
+    apiHashMasked: cfg.apiHash ? cfg.apiHash.slice(0, 6) + '••••••••••' + cfg.apiHash.slice(-4) : null,
+    webhookUrl: `${origin}/webhook/${cfg.webhookSecret}`,
+    configuredAt: cfg.configuredAt,
+    version: BRAND.VERSION,
+  });
+}
+
+async function apiTransactions(env, request) {
+  const { err } = await requireAdmin(env, request);
+  if (err) return err;
+  return json({ ok: true, transactions: await getTxLog(env) });
 }
 
 async function apiRunCron(env, request) {
@@ -1102,76 +1190,144 @@ const SETUP_HTML = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>⚙️ راه‌اندازی Self-Bot Hub</title>
+<title>⚡️ راه‌اندازی Self-Bot Hub</title>
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 <style>${CSS_BASE}
-.wrap{max-width:460px;margin:0 auto;padding:40px 18px}
-.logo{text-align:center;margin-bottom:26px}
-.logo .em{font-size:56px;display:block;filter:drop-shadow(0 6px 24px rgba(139,92,246,.6))}
-.logo h1{font-size:26px;margin-top:10px;background:linear-gradient(90deg,#a5b4fc,#f0abfc);
- -webkit-background-clip:text;background-clip:text;color:transparent}
-.logo p{color:#94a3b8;font-size:13px;margin-top:6px}
-.card{padding:28px}
-.step{display:flex;gap:10px;align-items:center;margin-bottom:18px}
-.step .n{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#ec4899);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
-.result{display:none;margin-top:18px;padding:16px;border-radius:12px;font-size:14px;line-height:2}
-.result.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4)}
-.result.err{display:block;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4)}
-code{background:rgba(0,0,0,.4);padding:2px 8px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
-.hint{font-size:12px;color:#64748b;margin-top:4px}
+body{overflow-x:hidden}
+.aurora{position:fixed;inset:-20%;z-index:-2;filter:blur(70px);opacity:.55;
+ background:
+  radial-gradient(35% 30% at 25% 20%,#6d28d9,transparent 70%),
+  radial-gradient(30% 30% at 75% 15%,#db2777,transparent 70%),
+  radial-gradient(35% 35% at 60% 80%,#0891b2,transparent 70%),
+  radial-gradient(25% 25% at 15% 75%,#4f46e5,transparent 70%);
+ animation:drift 16s ease-in-out infinite alternate}
+@keyframes drift{from{transform:rotate(-4deg) scale(1)}to{transform:rotate(5deg) scale(1.15)}}
+.gem{position:fixed;z-index:-1;font-size:22px;opacity:.5;animation:float linear infinite}
+@keyframes float{from{transform:translateY(105vh) rotate(0)}to{transform:translateY(-10vh) rotate(360deg)}}
+.wrap{max-width:480px;margin:0 auto;padding:40px 18px}
+.logo{text-align:center;margin-bottom:24px}
+.logo .em{font-size:58px;display:block;filter:drop-shadow(0 8px 30px rgba(139,92,246,.8));animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.logo h1{font-size:30px;margin-top:10px;font-weight:900;letter-spacing:.5px;
+ background:linear-gradient(90deg,#a5b4fc,#f0abfc,#67e8f9,#a5b4fc);background-size:300% 100%;
+ -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 5s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.logo p{color:#94a3b8;font-size:13px;margin-top:8px}
+.frame{position:relative;border-radius:22px;padding:1.5px;overflow:hidden}
+.frame::before{content:'';position:absolute;inset:-150%;
+ background:conic-gradient(from 0deg,#6366f1,#ec4899,#22d3ee,#6366f1);animation:spin 5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.card{position:relative;border-radius:21px;padding:26px;background:rgba(13,16,32,.92);border:none}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:11px;padding:6px 12px;border-radius:99px;background:rgba(99,102,241,.14);
+ border:1px solid rgba(129,140,248,.35);color:#c7d2fe}
+.field{position:relative;margin-top:4px}
+.field .ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.7}
+.field input{padding-left:42px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.grid2{grid-template-columns:1fr}}
+.btn-mega{width:100%;margin-top:24px;padding:15px;font-size:16px;position:relative;overflow:hidden;
+ background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);background-size:200% 100%;animation:btnsh 3s linear infinite}
+@keyframes btnsh{to{background-position:200% 0}}
+.btn-mega:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(168,85,247,.4)}
+.result{display:none;margin-top:18px;padding:16px;border-radius:14px;font-size:14px;line-height:2.1}
+.result.ok{display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4)}
+.result.err{display:block;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4)}
+code{background:rgba(0,0,0,.45);padding:2px 8px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
+.hint{font-size:11.5px;color:#64748b;margin-top:4px}
 .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:none}
 @keyframes sp{to{transform:rotate(360deg)}}
+.copybtn{cursor:pointer;background:rgba(255,255,255,.1);border:none;color:#c7d2fe;border-radius:6px;padding:2px 8px;font-size:11px;font-family:inherit}
 </style>
 </head>
 <body>
-<div class="bg"></div>
+<div class="aurora"></div>
+<div id="gems"></div>
 <div class="wrap">
   <div class="logo">
     <span class="em">🤖</span>
-    <h1>Self-Bot Hub</h1>
-    <p>ربات سلف‌ساز تلگرام + پنل مدیریت &mdash; روی Cloudflare Workers ⚡️</p>
+    <h1>SELF-BOT HUB</h1>
+    <p>سلف‌ساز تلگرام + اقتصاد الماس 💎 روی Cloudflare Edge ⚡️</p>
   </div>
-  <div class="card">
-    <div class="step"><span class="n">1</span><span>توکن ربات را از <b>@BotFather</b> بگیرید</span></div>
-    <div class="step"><span class="n">2</span><span>آیدی عددی خود را از <b>@userinfobot</b> بگیرید</span></div>
-    <div class="step"><span class="n">3</span><span>فرم را ارسال کنید &mdash; وب‌هوک خودکار ست می‌شود ✅</span></div>
-
+  <div class="chips">
+    <span class="chip">⚡️ Workers</span><span class="chip">🗄 KV / D1</span>
+    <span class="chip">⏰ Cron روزانه</span><span class="chip">🧬 MTProto Ready</span>
+  </div>
+  <div class="frame"><div class="card">
     <form id="f">
       <label>🔑 توکن ربات تلگرام (Bot Token)</label>
-      <input id="token" dir="ltr" placeholder="123456789:AAE..." required autocomplete="off">
-      <div class="hint">به‌صورت امن در Cloudflare KV ذخیره می‌شود و هرگز نمایش داده نمی‌شود.</div>
+      <div class="field"><span class="ic">🤖</span>
+        <input id="token" dir="ltr" placeholder="123456789:AAE..." required autocomplete="off"></div>
+      <div class="hint">از @BotFather — امن در Cloudflare KV ذخیره می‌شود.</div>
 
       <label>👑 آیدی عددی مالک (Owner Numeric ID)</label>
-      <input id="owner" dir="ltr" placeholder="123456789" required inputmode="numeric" pattern="\d{4,15}">
+      <div class="field"><span class="ic">🪪</span>
+        <input id="owner" dir="ltr" placeholder="123456789" required inputmode="numeric" pattern="\d{4,15}"></div>
+      <div class="hint">از @userinfobot بگیرید.</div>
 
-      <button class="btn btn-primary" style="width:100%;margin-top:22px" id="go">
-        <span class="spin" id="sp"></span> 🚀 راه‌اندازی و ست وب‌هوک
+      <div class="grid2">
+        <div>
+          <label>🧬 API ID</label>
+          <div class="field"><span class="ic">#️⃣</span>
+            <input id="apiId" dir="ltr" placeholder="1234567" required inputmode="numeric" pattern="\d{1,10}"></div>
+        </div>
+        <div>
+          <label>🧬 API Hash</label>
+          <div class="field"><span class="ic">🔐</span>
+            <input id="apiHash" dir="ltr" placeholder="32 کاراکتر hex" required pattern="[a-fA-F0-9]{32}" maxlength="32"></div>
+        </div>
+      </div>
+      <div class="hint">API ID و API Hash را از <b>my.telegram.org → API development tools</b> دریافت کنید (برای هسته MTProto سلف).</div>
+
+      <button class="btn btn-mega" id="go">
+        <span class="spin" id="sp"></span> 🚀 راه‌اندازی، ذخیره امن و ست وب‌هوک
       </button>
     </form>
     <div class="result" id="res"></div>
-  </div>
-  <p class="muted" style="text-align:center;margin-top:18px">Cloudflare Workers &bull; KV / D1 &bull; Cron Triggers</p>
+  </div></div>
+  <p class="muted" style="text-align:center;margin-top:18px">پس از راه‌اندازی، این صفحه به صفحه وضعیت تبدیل می‌شود 🔒</p>
 </div>
 <script>
+// ذرات الماس شناور
+(function(){
+  var g=document.getElementById('gems'),ems=['💎','✨','🔷','⭐️'];
+  for(var i=0;i<14;i++){
+    var s=document.createElement('span');s.className='gem';
+    s.textContent=ems[i%ems.length];
+    s.style.left=(Math.random()*100)+'vw';
+    s.style.fontSize=(12+Math.random()*18)+'px';
+    s.style.animationDuration=(9+Math.random()*14)+'s';
+    s.style.animationDelay=(-Math.random()*20)+'s';
+    g.appendChild(s);
+  }
+})();
 var f=document.getElementById('f'),res=document.getElementById('res'),go=document.getElementById('go'),sp=document.getElementById('sp');
+function val(id){return document.getElementById(id).value.trim()}
 f.addEventListener('submit',function(e){
   e.preventDefault();
   go.disabled=true;sp.style.display='inline-block';res.className='result';
   fetch('/api/setup',{method:'POST',headers:{'content-type':'application/json'},
-    body:JSON.stringify({botToken:document.getElementById('token').value.trim(),ownerId:document.getElementById('owner').value.trim()})})
+    body:JSON.stringify({botToken:val('token'),ownerId:val('owner'),apiId:val('apiId'),apiHash:val('apiHash')})})
   .then(function(r){return r.json()})
   .then(function(j){
     if(j.ok){
       res.className='result ok';
-      res.innerHTML='✅ <b>راه‌اندازی موفق!</b><br>🤖 ربات: <b>@'+j.botUsername+'</b><br>'+
-        '🔗 وب‌هوک: <code>'+j.webhookUrl+'</code><br>'+
-        '🔑 کلید مدیریت (ذخیره کنید!): <code>'+j.adminKey+'</code><br>'+
-        '🌐 <a href="/panel?key='+j.adminKey+'" style="color:#a5b4fc">ورود به پنل مدیریت ←</a>';
+      res.innerHTML='✅ <b>راه‌اندازی موفق!</b> 🎉<br>'+
+        '🤖 ربات: <b>@'+j.botUsername+'</b><br>'+
+        '🧬 API ID ثبت شد: <code>'+j.apiId+'</code><br>'+
+        '🔗 وب‌هوک خودکار ست شد ✅<br>'+
+        '🔑 کلید مدیریت: <code id="ak">'+j.adminKey+'</code> '+
+        '<button class="copybtn" onclick="cp()">کپی 📋</button><br>'+
+        '🌐 <a href="/panel?key='+j.adminKey+'" style="color:#67e8f9;font-weight:700">ورود به پنل مدیریت ←</a>';
       try{localStorage.setItem('adminKey',j.adminKey)}catch(_){}
     }else{
       res.className='result err';
-      var m={invalid_token_format:'فرمت توکن نامعتبر است.',invalid_owner_id:'آیدی عددی نامعتبر است.',
-        token_rejected_by_telegram:'تلگرام این توکن را رد کرد!',already_configured:'ربات قبلا پیکربندی شده است.',
+      var m={invalid_token_format:'فرمت توکن ربات نامعتبر است.',
+        invalid_owner_id:'آیدی عددی مالک نامعتبر است.',
+        invalid_api_id:'API ID باید فقط عدد باشد (my.telegram.org).',
+        invalid_api_hash:'API Hash باید دقیقا ۳۲ کاراکتر hex باشد.',
+        token_rejected_by_telegram:'تلگرام این توکن را رد کرد! دوباره از @BotFather بگیرید.',
+        already_configured:'ربات قبلا پیکربندی شده است.',
         webhook_failed:'ست وب‌هوک ناموفق: '+(j.detail||'')};
       res.innerHTML='❌ '+(m[j.error]||j.error);
       go.disabled=false;
@@ -1180,6 +1336,10 @@ f.addEventListener('submit',function(e){
   })
   .catch(function(){res.className='result err';res.textContent='❌ خطای شبکه';go.disabled=false;sp.style.display='none'});
 });
+function cp(){
+  var t=document.getElementById('ak').textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){alert('کپی شد ✅')}).catch(function(){prompt('کپی کنید:',t)});
+}
 </script>
 </body>
 </html>`;
@@ -1277,7 +1437,34 @@ tr:hover td{background:rgba(255,255,255,.03)}
     </div>
 
     <div class="card section">
+      <h2>🧬 پیکربندی ربات و MTProto</h2>
+      <table>
+        <tbody>
+          <tr><td>🤖 ربات</td><td dir="ltr" id="cBot">—</td></tr>
+          <tr><td>👑 آیدی مالک</td><td dir="ltr" id="cOwner">—</td></tr>
+          <tr><td>🧬 API ID</td><td dir="ltr" id="cApiId">—</td></tr>
+          <tr><td>🧬 API Hash</td><td dir="ltr"><span id="cApiHash">—</span>
+            <button class="btn btn-ghost mini" style="margin-right:8px" onclick="toggleHash()">👁 نمایش/مخفی</button></td></tr>
+          <tr><td>🔗 وب‌هوک</td><td dir="ltr" style="font-size:11px;word-break:break-all" id="cWebhook">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card section">
+      <h2>📜 تراکنش‌های اخیر الماس</h2>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>زمان</th><th>کاربر</th><th>مقدار</th><th>دلیل</th></tr></thead>
+        <tbody id="txbody"><tr><td colspan="4" style="text-align:center;color:#64748b">—</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card section">
       <h2>👥 لیست کاربران</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input id="search" placeholder="🔍 جستجو بر اساس نام، یوزرنیم یا آیدی..." oninput="applySearch()">
+      </div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr><th>آیدی</th><th>نام</th><th>یوزرنیم</th><th>💎</th><th>سلف</th><th>ماژول‌ها</th><th>عملیات</th></tr></thead>
@@ -1300,7 +1487,7 @@ function doLogin(){
   KEY=qs('keyIn').value.trim();
   if(!KEY)return toast('کلید را وارد کنید');
   api('/api/users').then(function(j){
-    if(j.ok){try{localStorage.setItem('adminKey',KEY)}catch(_){}show(true);render(j)}
+    if(j.ok){try{localStorage.setItem('adminKey',KEY)}catch(_){}show(true);render(j);loadConfig();loadTx()}
     else{toast('❌ کلید نامعتبر است');}
   });
 }
@@ -1311,9 +1498,13 @@ function render(j){
   qs('sTotal').textContent=fa(j.stats.total);
   qs('sActive').textContent=fa(j.stats.active);
   qs('sDiamonds').textContent=fa(j.stats.diamonds);
+  ALL_USERS=j.users.sort(function(a,b){return b.diamonds-a.diamonds});
+  applySearch();
+}
+function renderRows(users){
   var tb=qs('tbody');tb.innerHTML='';
-  if(!j.users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">هنوز کاربری ثبت نشده — ربات را در تلگرام /start کنید</td></tr>';return}
-  j.users.sort(function(a,b){return b.diamonds-a.diamonds}).forEach(function(u){
+  if(!users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">هنوز کاربری ثبت نشده — ربات را در تلگرام /start کنید</td></tr>';return}
+  users.forEach(function(u){
     var tr=document.createElement('tr');
     tr.innerHTML='<td dir="ltr">'+u.id+'</td><td>'+escp(u.name)+'</td><td dir="ltr">'+(u.username?'@'+escp(u.username):'—')+'</td>'+
       '<td><b>'+fa(u.diamonds)+'</b></td>'+
@@ -1328,7 +1519,48 @@ function render(j){
   });
 }
 function escp(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-function load(){api('/api/users').then(function(j){if(j.ok)render(j);else show(false)})}
+var ALL_USERS=null,HASH_FULL='',HASH_MASK='',HASH_SHOWN=false;
+function applySearch(){
+  if(!ALL_USERS)return;
+  var q=qs('search').value.trim().toLowerCase();
+  var filtered=!q?ALL_USERS:ALL_USERS.filter(function(u){
+    return String(u.id).indexOf(q)>-1||(u.name||'').toLowerCase().indexOf(q)>-1||(u.username||'').toLowerCase().indexOf(q)>-1;
+  });
+  renderRows(filtered);
+}
+function toggleHash(){
+  HASH_SHOWN=!HASH_SHOWN;
+  qs('cApiHash').textContent=HASH_SHOWN?(HASH_FULL||'—'):(HASH_MASK||'—');
+}
+var TX_LABELS={activation:'⚡️ فعال‌سازی سلف',daily:'📆 نگهداری روزانه',transfer_in:'📥 دریافت انتقال',
+  transfer_out:'📤 ارسال انتقال',admin:'👑 مدیریت',daily_gift:'🎁 جایزه روزانه',wheel:'🎡 گردونه شانس'};
+function loadConfig(){
+  api('/api/config').then(function(j){
+    if(!j.ok)return;
+    qs('cBot').textContent='@'+(j.botUsername||'—');
+    qs('cOwner').textContent=j.ownerId||'—';
+    qs('cApiId').textContent=j.apiId||'ثبت نشده';
+    HASH_FULL=j.apiHash||'';HASH_MASK=j.apiHashMasked||'ثبت نشده';
+    qs('cApiHash').textContent=HASH_MASK;
+    qs('cWebhook').textContent=j.webhookUrl||'—';
+  });
+}
+function loadTx(){
+  api('/api/transactions').then(function(j){
+    if(!j.ok)return;
+    var tb=qs('txbody');tb.innerHTML='';
+    if(!j.transactions.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#64748b">هنوز تراکنشی ثبت نشده</td></tr>';return}
+    j.transactions.slice(0,30).forEach(function(t){
+      var tr=document.createElement('tr');
+      var d=new Date(t.t).toLocaleString('fa-IR',{timeZone:'Asia/Tehran',hour:'2-digit',minute:'2-digit',month:'2-digit',day:'2-digit'});
+      tr.innerHTML='<td>'+d+'</td><td dir="ltr">'+t.id+'</td>'+
+        '<td style="color:'+(t.amount>=0?'#4ade80':'#f87171')+';font-weight:700">'+(t.amount>=0?'+':'')+fa(t.amount)+' 💎</td>'+
+        '<td>'+(TX_LABELS[t.reason]||t.reason)+'</td>';
+      tb.appendChild(tr);
+    });
+  });
+}
+function load(){api('/api/users').then(function(j){if(j.ok){render(j);loadConfig();loadTx()}else show(false)})}
 function quick(id,amt){api('/api/diamonds',{method:'POST',body:JSON.stringify({id:id,amount:amt})}).then(function(j){toast(j.ok?'✅ انجام شد':'❌ خطا');load()})}
 function giveDiamonds(){
   var id=Number(qs('dId').value),amt=Number(qs('dAmt').value);
@@ -1348,7 +1580,7 @@ function runCron(){api('/api/run-cron',{method:'POST'}).then(function(j){toast(j
   var k=null;try{k=localStorage.getItem('adminKey')}catch(_){}
   var q=new URLSearchParams(location.search).get('key');
   KEY=q||k;
-  if(KEY){api('/api/users').then(function(j){if(j.ok){show(true);render(j)}else{show(false)}})}
+  if(KEY){api('/api/users').then(function(j){if(j.ok){show(true);render(j);loadConfig();loadTx()}else{show(false)}})}
   else show(false);
 })();
 </script>
@@ -1375,6 +1607,7 @@ a.btn{text-decoration:none;margin:5px}
 <span class="em">🤖</span>
 <h1>Self-Bot Hub فعال است</h1>
 <p class="ok">✅ ربات @${esc(cfg.botUsername)} پیکربندی شده و وب‌هوک متصل است</p>
+${cfg.apiId ? `<p class="ok" style="color:#67e8f9">🧬 MTProto: API ID <b dir="ltr">${esc(cfg.apiId)}</b> ثبت شده ✓</p>` : ''}
 <a class="btn btn-primary" href="https://t.me/${esc(cfg.botUsername)}">💬 باز کردن ربات در تلگرام</a>
 <a class="btn" style="background:rgba(255,255,255,.1)" href="/panel">👑 پنل مدیریت</a>
 </div>
@@ -1419,6 +1652,8 @@ export default {
     if (path === '/api/toggle-self' && request.method === 'POST') return apiToggleSelf(env, request);
     if (path === '/api/broadcast' && request.method === 'POST') return apiBroadcast(env, request);
     if (path === '/api/run-cron' && request.method === 'POST') return apiRunCron(env, request);
+    if (path === '/api/config') return apiConfig(env, request);
+    if (path === '/api/transactions') return apiTransactions(env, request);
     if (path === '/api/health') return json({ ok: true, name: BRAND.BOT_NAME, version: BRAND.VERSION });
 
     /* ---- صفحات ---- */

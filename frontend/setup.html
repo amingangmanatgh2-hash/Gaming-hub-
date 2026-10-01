@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>⚙️ راه‌اندازی Self-Bot Hub</title>
+<title>⚡️ راه‌اندازی Self-Bot Hub</title>
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif}
@@ -25,73 +25,141 @@ label{display:block;margin:14px 0 6px;font-size:13px;color:#a5b4fc;font-weight:6
 .muted{color:#94a3b8;font-size:13px}
 @font-face{font-family:Vazirmatn;src:local('Vazirmatn')}
 
-.wrap{max-width:460px;margin:0 auto;padding:40px 18px}
-.logo{text-align:center;margin-bottom:26px}
-.logo .em{font-size:56px;display:block;filter:drop-shadow(0 6px 24px rgba(139,92,246,.6))}
-.logo h1{font-size:26px;margin-top:10px;background:linear-gradient(90deg,#a5b4fc,#f0abfc);
- -webkit-background-clip:text;background-clip:text;color:transparent}
-.logo p{color:#94a3b8;font-size:13px;margin-top:6px}
-.card{padding:28px}
-.step{display:flex;gap:10px;align-items:center;margin-bottom:18px}
-.step .n{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#ec4899);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
-.result{display:none;margin-top:18px;padding:16px;border-radius:12px;font-size:14px;line-height:2}
-.result.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4)}
-.result.err{display:block;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4)}
-code{background:rgba(0,0,0,.4);padding:2px 8px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
-.hint{font-size:12px;color:#64748b;margin-top:4px}
+body{overflow-x:hidden}
+.aurora{position:fixed;inset:-20%;z-index:-2;filter:blur(70px);opacity:.55;
+ background:
+  radial-gradient(35% 30% at 25% 20%,#6d28d9,transparent 70%),
+  radial-gradient(30% 30% at 75% 15%,#db2777,transparent 70%),
+  radial-gradient(35% 35% at 60% 80%,#0891b2,transparent 70%),
+  radial-gradient(25% 25% at 15% 75%,#4f46e5,transparent 70%);
+ animation:drift 16s ease-in-out infinite alternate}
+@keyframes drift{from{transform:rotate(-4deg) scale(1)}to{transform:rotate(5deg) scale(1.15)}}
+.gem{position:fixed;z-index:-1;font-size:22px;opacity:.5;animation:float linear infinite}
+@keyframes float{from{transform:translateY(105vh) rotate(0)}to{transform:translateY(-10vh) rotate(360deg)}}
+.wrap{max-width:480px;margin:0 auto;padding:40px 18px}
+.logo{text-align:center;margin-bottom:24px}
+.logo .em{font-size:58px;display:block;filter:drop-shadow(0 8px 30px rgba(139,92,246,.8));animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.logo h1{font-size:30px;margin-top:10px;font-weight:900;letter-spacing:.5px;
+ background:linear-gradient(90deg,#a5b4fc,#f0abfc,#67e8f9,#a5b4fc);background-size:300% 100%;
+ -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 5s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.logo p{color:#94a3b8;font-size:13px;margin-top:8px}
+.frame{position:relative;border-radius:22px;padding:1.5px;overflow:hidden}
+.frame::before{content:'';position:absolute;inset:-150%;
+ background:conic-gradient(from 0deg,#6366f1,#ec4899,#22d3ee,#6366f1);animation:spin 5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.card{position:relative;border-radius:21px;padding:26px;background:rgba(13,16,32,.92);border:none}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:11px;padding:6px 12px;border-radius:99px;background:rgba(99,102,241,.14);
+ border:1px solid rgba(129,140,248,.35);color:#c7d2fe}
+.field{position:relative;margin-top:4px}
+.field .ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.7}
+.field input{padding-left:42px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.grid2{grid-template-columns:1fr}}
+.btn-mega{width:100%;margin-top:24px;padding:15px;font-size:16px;position:relative;overflow:hidden;
+ background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);background-size:200% 100%;animation:btnsh 3s linear infinite}
+@keyframes btnsh{to{background-position:200% 0}}
+.btn-mega:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(168,85,247,.4)}
+.result{display:none;margin-top:18px;padding:16px;border-radius:14px;font-size:14px;line-height:2.1}
+.result.ok{display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4)}
+.result.err{display:block;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4)}
+code{background:rgba(0,0,0,.45);padding:2px 8px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
+.hint{font-size:11.5px;color:#64748b;margin-top:4px}
 .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:none}
 @keyframes sp{to{transform:rotate(360deg)}}
+.copybtn{cursor:pointer;background:rgba(255,255,255,.1);border:none;color:#c7d2fe;border-radius:6px;padding:2px 8px;font-size:11px;font-family:inherit}
 </style>
 </head>
 <body>
-<div class="bg"></div>
+<div class="aurora"></div>
+<div id="gems"></div>
 <div class="wrap">
   <div class="logo">
     <span class="em">🤖</span>
-    <h1>Self-Bot Hub</h1>
-    <p>ربات سلف‌ساز تلگرام + پنل مدیریت &mdash; روی Cloudflare Workers ⚡️</p>
+    <h1>SELF-BOT HUB</h1>
+    <p>سلف‌ساز تلگرام + اقتصاد الماس 💎 روی Cloudflare Edge ⚡️</p>
   </div>
-  <div class="card">
-    <div class="step"><span class="n">1</span><span>توکن ربات را از <b>@BotFather</b> بگیرید</span></div>
-    <div class="step"><span class="n">2</span><span>آیدی عددی خود را از <b>@userinfobot</b> بگیرید</span></div>
-    <div class="step"><span class="n">3</span><span>فرم را ارسال کنید &mdash; وب‌هوک خودکار ست می‌شود ✅</span></div>
-
+  <div class="chips">
+    <span class="chip">⚡️ Workers</span><span class="chip">🗄 KV / D1</span>
+    <span class="chip">⏰ Cron روزانه</span><span class="chip">🧬 MTProto Ready</span>
+  </div>
+  <div class="frame"><div class="card">
     <form id="f">
       <label>🔑 توکن ربات تلگرام (Bot Token)</label>
-      <input id="token" dir="ltr" placeholder="123456789:AAE..." required autocomplete="off">
-      <div class="hint">به‌صورت امن در Cloudflare KV ذخیره می‌شود و هرگز نمایش داده نمی‌شود.</div>
+      <div class="field"><span class="ic">🤖</span>
+        <input id="token" dir="ltr" placeholder="123456789:AAE..." required autocomplete="off"></div>
+      <div class="hint">از @BotFather — امن در Cloudflare KV ذخیره می‌شود.</div>
 
       <label>👑 آیدی عددی مالک (Owner Numeric ID)</label>
-      <input id="owner" dir="ltr" placeholder="123456789" required inputmode="numeric" pattern="d{4,15}">
+      <div class="field"><span class="ic">🪪</span>
+        <input id="owner" dir="ltr" placeholder="123456789" required inputmode="numeric" pattern="d{4,15}"></div>
+      <div class="hint">از @userinfobot بگیرید.</div>
 
-      <button class="btn btn-primary" style="width:100%;margin-top:22px" id="go">
-        <span class="spin" id="sp"></span> 🚀 راه‌اندازی و ست وب‌هوک
+      <div class="grid2">
+        <div>
+          <label>🧬 API ID</label>
+          <div class="field"><span class="ic">#️⃣</span>
+            <input id="apiId" dir="ltr" placeholder="1234567" required inputmode="numeric" pattern="d{1,10}"></div>
+        </div>
+        <div>
+          <label>🧬 API Hash</label>
+          <div class="field"><span class="ic">🔐</span>
+            <input id="apiHash" dir="ltr" placeholder="32 کاراکتر hex" required pattern="[a-fA-F0-9]{32}" maxlength="32"></div>
+        </div>
+      </div>
+      <div class="hint">API ID و API Hash را از <b>my.telegram.org → API development tools</b> دریافت کنید (برای هسته MTProto سلف).</div>
+
+      <button class="btn btn-mega" id="go">
+        <span class="spin" id="sp"></span> 🚀 راه‌اندازی، ذخیره امن و ست وب‌هوک
       </button>
     </form>
     <div class="result" id="res"></div>
-  </div>
-  <p class="muted" style="text-align:center;margin-top:18px">Cloudflare Workers &bull; KV / D1 &bull; Cron Triggers</p>
+  </div></div>
+  <p class="muted" style="text-align:center;margin-top:18px">پس از راه‌اندازی، این صفحه به صفحه وضعیت تبدیل می‌شود 🔒</p>
 </div>
 <script>
+// ذرات الماس شناور
+(function(){
+  var g=document.getElementById('gems'),ems=['💎','✨','🔷','⭐️'];
+  for(var i=0;i<14;i++){
+    var s=document.createElement('span');s.className='gem';
+    s.textContent=ems[i%ems.length];
+    s.style.left=(Math.random()*100)+'vw';
+    s.style.fontSize=(12+Math.random()*18)+'px';
+    s.style.animationDuration=(9+Math.random()*14)+'s';
+    s.style.animationDelay=(-Math.random()*20)+'s';
+    g.appendChild(s);
+  }
+})();
 var f=document.getElementById('f'),res=document.getElementById('res'),go=document.getElementById('go'),sp=document.getElementById('sp');
+function val(id){return document.getElementById(id).value.trim()}
 f.addEventListener('submit',function(e){
   e.preventDefault();
   go.disabled=true;sp.style.display='inline-block';res.className='result';
   fetch('/api/setup',{method:'POST',headers:{'content-type':'application/json'},
-    body:JSON.stringify({botToken:document.getElementById('token').value.trim(),ownerId:document.getElementById('owner').value.trim()})})
+    body:JSON.stringify({botToken:val('token'),ownerId:val('owner'),apiId:val('apiId'),apiHash:val('apiHash')})})
   .then(function(r){return r.json()})
   .then(function(j){
     if(j.ok){
       res.className='result ok';
-      res.innerHTML='✅ <b>راه‌اندازی موفق!</b><br>🤖 ربات: <b>@'+j.botUsername+'</b><br>'+
-        '🔗 وب‌هوک: <code>'+j.webhookUrl+'</code><br>'+
-        '🔑 کلید مدیریت (ذخیره کنید!): <code>'+j.adminKey+'</code><br>'+
-        '🌐 <a href="/panel?key='+j.adminKey+'" style="color:#a5b4fc">ورود به پنل مدیریت ←</a>';
+      res.innerHTML='✅ <b>راه‌اندازی موفق!</b> 🎉<br>'+
+        '🤖 ربات: <b>@'+j.botUsername+'</b><br>'+
+        '🧬 API ID ثبت شد: <code>'+j.apiId+'</code><br>'+
+        '🔗 وب‌هوک خودکار ست شد ✅<br>'+
+        '🔑 کلید مدیریت: <code id="ak">'+j.adminKey+'</code> '+
+        '<button class="copybtn" onclick="cp()">کپی 📋</button><br>'+
+        '🌐 <a href="/panel?key='+j.adminKey+'" style="color:#67e8f9;font-weight:700">ورود به پنل مدیریت ←</a>';
       try{localStorage.setItem('adminKey',j.adminKey)}catch(_){}
     }else{
       res.className='result err';
-      var m={invalid_token_format:'فرمت توکن نامعتبر است.',invalid_owner_id:'آیدی عددی نامعتبر است.',
-        token_rejected_by_telegram:'تلگرام این توکن را رد کرد!',already_configured:'ربات قبلا پیکربندی شده است.',
+      var m={invalid_token_format:'فرمت توکن ربات نامعتبر است.',
+        invalid_owner_id:'آیدی عددی مالک نامعتبر است.',
+        invalid_api_id:'API ID باید فقط عدد باشد (my.telegram.org).',
+        invalid_api_hash:'API Hash باید دقیقا ۳۲ کاراکتر hex باشد.',
+        token_rejected_by_telegram:'تلگرام این توکن را رد کرد! دوباره از @BotFather بگیرید.',
+        already_configured:'ربات قبلا پیکربندی شده است.',
         webhook_failed:'ست وب‌هوک ناموفق: '+(j.detail||'')};
       res.innerHTML='❌ '+(m[j.error]||j.error);
       go.disabled=false;
@@ -100,6 +168,10 @@ f.addEventListener('submit',function(e){
   })
   .catch(function(){res.className='result err';res.textContent='❌ خطای شبکه';go.disabled=false;sp.style.display='none'});
 });
+function cp(){
+  var t=document.getElementById('ak').textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){alert('کپی شد ✅')}).catch(function(){prompt('کپی کنید:',t)});
+}
 </script>
 </body>
 </html>
