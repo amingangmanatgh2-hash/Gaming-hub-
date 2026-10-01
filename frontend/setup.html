@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚙️ راه‌اندازی Self-Bot Hub</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif}
+body{min-height:100vh;background:#0b0e1a;color:#e8eaf6;direction:rtl}
+.bg{position:fixed;inset:0;background:
+ radial-gradient(60% 50% at 20% 10%,rgba(99,102,241,.25),transparent),
+ radial-gradient(50% 40% at 85% 25%,rgba(236,72,153,.18),transparent),
+ radial-gradient(45% 45% at 50% 95%,rgba(34,211,238,.15),transparent);z-index:-1}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+ border-radius:20px;backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+input,textarea{width:100%;padding:13px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.15);
+ background:rgba(0,0,0,.3);color:#fff;font-size:15px;outline:none;transition:.2s}
+input:focus,textarea:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border:none;
+ border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;color:#fff}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;margin:14px 0 6px;font-size:13px;color:#a5b4fc;font-weight:600}
+.muted{color:#94a3b8;font-size:13px}
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn')}
+
+.wrap{max-width:460px;margin:0 auto;padding:40px 18px}
+.logo{text-align:center;margin-bottom:26px}
+.logo .em{font-size:56px;display:block;filter:drop-shadow(0 6px 24px rgba(139,92,246,.6))}
+.logo h1{font-size:26px;margin-top:10px;background:linear-gradient(90deg,#a5b4fc,#f0abfc);
+ -webkit-background-clip:text;background-clip:text;color:transparent}
+.logo p{color:#94a3b8;font-size:13px;margin-top:6px}
+.card{padding:28px}
+.step{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+.step .n{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#ec4899);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.result{display:none;margin-top:18px;padding:16px;border-radius:12px;font-size:14px;line-height:2}
+.result.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4)}
+.result.err{display:block;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4)}
+code{background:rgba(0,0,0,.4);padding:2px 8px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
+.hint{font-size:12px;color:#64748b;margin-top:4px}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="logo">
+    <span class="em">🤖</span>
+    <h1>Self-Bot Hub</h1>
+    <p>ربات سلف‌ساز تلگرام + پنل مدیریت &mdash; روی Cloudflare Workers ⚡️</p>
+  </div>
+  <div class="card">
+    <div class="step"><span class="n">1</span><span>توکن ربات را از <b>@BotFather</b> بگیرید</span></div>
+    <div class="step"><span class="n">2</span><span>آیدی عددی خود را از <b>@userinfobot</b> بگیرید</span></div>
+    <div class="step"><span class="n">3</span><span>فرم را ارسال کنید &mdash; وب‌هوک خودکار ست می‌شود ✅</span></div>
+
+    <form id="f">
+      <label>🔑 توکن ربات تلگرام (Bot Token)</label>
+      <input id="token" dir="ltr" placeholder="123456789:AAE..." required autocomplete="off">
+      <div class="hint">به‌صورت امن در Cloudflare KV ذخیره می‌شود و هرگز نمایش داده نمی‌شود.</div>
+
+      <label>👑 آیدی عددی مالک (Owner Numeric ID)</label>
+      <input id="owner" dir="ltr" placeholder="123456789" required inputmode="numeric" pattern="d{4,15}">
+
+      <button class="btn btn-primary" style="width:100%;margin-top:22px" id="go">
+        <span class="spin" id="sp"></span> 🚀 راه‌اندازی و ست وب‌هوک
+      </button>
+    </form>
+    <div class="result" id="res"></div>
+  </div>
+  <p class="muted" style="text-align:center;margin-top:18px">Cloudflare Workers &bull; KV / D1 &bull; Cron Triggers</p>
+</div>
+<script>
+var f=document.getElementById('f'),res=document.getElementById('res'),go=document.getElementById('go'),sp=document.getElementById('sp');
+f.addEventListener('submit',function(e){
+  e.preventDefault();
+  go.disabled=true;sp.style.display='inline-block';res.className='result';
+  fetch('/api/setup',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({botToken:document.getElementById('token').value.trim(),ownerId:document.getElementById('owner').value.trim()})})
+  .then(function(r){return r.json()})
+  .then(function(j){
+    if(j.ok){
+      res.className='result ok';
+      res.innerHTML='✅ <b>راه‌اندازی موفق!</b><br>🤖 ربات: <b>@'+j.botUsername+'</b><br>'+
+        '🔗 وب‌هوک: <code>'+j.webhookUrl+'</code><br>'+
+        '🔑 کلید مدیریت (ذخیره کنید!): <code>'+j.adminKey+'</code><br>'+
+        '🌐 <a href="/panel?key='+j.adminKey+'" style="color:#a5b4fc">ورود به پنل مدیریت ←</a>';
+      try{localStorage.setItem('adminKey',j.adminKey)}catch(_){}
+    }else{
+      res.className='result err';
+      var m={invalid_token_format:'فرمت توکن نامعتبر است.',invalid_owner_id:'آیدی عددی نامعتبر است.',
+        token_rejected_by_telegram:'تلگرام این توکن را رد کرد!',already_configured:'ربات قبلا پیکربندی شده است.',
+        webhook_failed:'ست وب‌هوک ناموفق: '+(j.detail||'')};
+      res.innerHTML='❌ '+(m[j.error]||j.error);
+      go.disabled=false;
+    }
+    sp.style.display='none';
+  })
+  .catch(function(){res.className='result err';res.textContent='❌ خطای شبکه';go.disabled=false;sp.style.display='none'});
+});
+</script>
+</body>
+</html>

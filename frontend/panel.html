@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>👑 پنل مدیریت — Self-Bot Hub</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif}
+body{min-height:100vh;background:#0b0e1a;color:#e8eaf6;direction:rtl}
+.bg{position:fixed;inset:0;background:
+ radial-gradient(60% 50% at 20% 10%,rgba(99,102,241,.25),transparent),
+ radial-gradient(50% 40% at 85% 25%,rgba(236,72,153,.18),transparent),
+ radial-gradient(45% 45% at 50% 95%,rgba(34,211,238,.15),transparent);z-index:-1}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+ border-radius:20px;backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+input,textarea{width:100%;padding:13px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.15);
+ background:rgba(0,0,0,.3);color:#fff;font-size:15px;outline:none;transition:.2s}
+input:focus,textarea:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border:none;
+ border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;color:#fff}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;margin:14px 0 6px;font-size:13px;color:#a5b4fc;font-weight:600}
+.muted{color:#94a3b8;font-size:13px}
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn')}
+
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;margin:18px;border-radius:16px}
+.top h1{font-size:18px}
+.top .tag{font-size:11px;color:#94a3b8}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat{padding:20px;text-align:center}
+.stat .v{font-size:30px;font-weight:800;background:linear-gradient(90deg,#a5b4fc,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .l{font-size:13px;color:#94a3b8;margin-top:4px}
+.section{padding:20px;margin-bottom:18px}
+.section h2{font-size:15px;margin-bottom:14px;color:#c7d2fe}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:#818cf8;text-align:right;padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+tr:hover td{background:rgba(255,255,255,.03)}
+.pill{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.pill.on{background:rgba(34,197,94,.15);color:#4ade80}
+.pill.off{background:rgba(239,68,68,.15);color:#f87171}
+.mini{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981)}
+.btn-red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.btn-ghost{background:rgba(255,255,255,.08)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row input{flex:1;min-width:140px}
+.login{max-width:380px;margin:12vh auto;padding:30px;text-align:center}
+#toast{position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:#1e293b;border:1px solid rgba(255,255,255,.15);
+ padding:12px 22px;border-radius:12px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:9}
+#toast.show{opacity:1}
+@media(max-width:640px){table{font-size:11px}td,th{padding:6px 5px}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div id="toast"></div>
+
+<div id="loginView" class="card login" style="display:none">
+  <div style="font-size:46px">🔐</div>
+  <h1 style="margin:10px 0 18px;font-size:20px">ورود به پنل مدیریت</h1>
+  <input id="keyIn" dir="ltr" placeholder="Admin Key">
+  <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="doLogin()">ورود 🚀</button>
+  <p class="muted" style="margin-top:12px">کلید مدیریت هنگام راه‌اندازی به شما داده شد (و برای مالک در تلگرام ارسال شد).</p>
+</div>
+
+<div id="panelView" style="display:none">
+  <div class="top card">
+    <div><h1>👑 پنل مدیریت Self-Bot Hub</h1><div class="tag">Panel LN | CK | Amin &bull; @helperlevibot</div></div>
+    <div class="row">
+      <button class="btn btn-ghost mini" onclick="load()">🔄 بروزرسانی</button>
+      <button class="btn btn-red mini" onclick="logout()">خروج</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="grid">
+      <div class="card stat"><div class="v" id="sTotal">—</div><div class="l">👥 کل کاربران</div></div>
+      <div class="card stat"><div class="v" id="sActive">—</div><div class="l">🟢 سلف‌های فعال</div></div>
+      <div class="card stat"><div class="v" id="sDiamonds">—</div><div class="l">💎 مجموع الماس‌ها</div></div>
+    </div>
+
+    <div class="card section">
+      <h2>💎 واریز / کسر الماس</h2>
+      <div class="row">
+        <input id="dId" dir="ltr" placeholder="آیدی عددی کاربر" inputmode="numeric">
+        <input id="dAmt" dir="ltr" placeholder="تعداد (منفی = کسر)" inputmode="numeric">
+        <button class="btn btn-green mini" onclick="giveDiamonds()">اعمال 💎</button>
+      </div>
+      <p class="muted" style="margin-top:8px">معادل دستور تلگرامی: <code style="direction:ltr">/give_diamonds &lt;id&gt; &lt;amount&gt;</code></p>
+    </div>
+
+    <div class="card section">
+      <h2>📢 پیام همگانی</h2>
+      <div class="row">
+        <input id="bText" placeholder="متن اطلاعیه برای همه کاربران...">
+        <button class="btn btn-primary mini" onclick="broadcast()">ارسال 📤</button>
+      </div>
+    </div>
+
+    <div class="card section">
+      <h2>⏰ کرون نگهداری روزانه (۳۰ 💎/روز)</h2>
+      <div class="row">
+        <span class="muted">اجرای خودکار: هر ۲۴ ساعت توسط Cloudflare Cron Trigger</span>
+        <button class="btn btn-ghost mini" onclick="runCron()">▶️ اجرای دستی الان</button>
+      </div>
+    </div>
+
+    <div class="card section">
+      <h2>👥 لیست کاربران</h2>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>آیدی</th><th>نام</th><th>یوزرنیم</th><th>💎</th><th>سلف</th><th>ماژول‌ها</th><th>عملیات</th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="7" style="text-align:center;color:#64748b">در حال بارگذاری...</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var KEY=null;
+function qs(id){return document.getElementById(id)}
+function toast(m){var t=qs('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2600)}
+function api(path,opts){
+  opts=opts||{};opts.headers=Object.assign({'content-type':'application/json','x-admin-key':KEY},opts.headers||{});
+  return fetch(path,opts).then(function(r){return r.json()});
+}
+function doLogin(){
+  KEY=qs('keyIn').value.trim();
+  if(!KEY)return toast('کلید را وارد کنید');
+  api('/api/users').then(function(j){
+    if(j.ok){try{localStorage.setItem('adminKey',KEY)}catch(_){}show(true);render(j)}
+    else{toast('❌ کلید نامعتبر است');}
+  });
+}
+function logout(){try{localStorage.removeItem('adminKey')}catch(_){}location.reload()}
+function show(ok){qs('loginView').style.display=ok?'none':'block';qs('panelView').style.display=ok?'block':'none'}
+function fa(n){return Number(n).toLocaleString('fa-IR')}
+function render(j){
+  qs('sTotal').textContent=fa(j.stats.total);
+  qs('sActive').textContent=fa(j.stats.active);
+  qs('sDiamonds').textContent=fa(j.stats.diamonds);
+  var tb=qs('tbody');tb.innerHTML='';
+  if(!j.users.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">هنوز کاربری ثبت نشده — ربات را در تلگرام /start کنید</td></tr>';return}
+  j.users.sort(function(a,b){return b.diamonds-a.diamonds}).forEach(function(u){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td dir="ltr">'+u.id+'</td><td>'+escp(u.name)+'</td><td dir="ltr">'+(u.username?'@'+escp(u.username):'—')+'</td>'+
+      '<td><b>'+fa(u.diamonds)+'</b></td>'+
+      '<td><span class="pill '+(u.selfActive?'on':'off')+'">'+(u.selfActive?'🟢 روشن':'🔴 خاموش')+'</span></td>'+
+      '<td>'+fa(u.modules)+'</td>'+
+      '<td class="row">'+
+        '<button class="btn btn-green mini" onclick="quick('+u.id+',30)">+۳۰</button>'+
+        '<button class="btn btn-red mini" onclick="quick('+u.id+',-30)">-۳۰</button>'+
+        '<button class="btn btn-ghost mini" onclick="toggleSelf('+u.id+','+(!u.selfActive)+')">'+(u.selfActive?'خاموش کن':'روشن کن')+'</button>'+
+      '</td>';
+    tb.appendChild(tr);
+  });
+}
+function escp(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function load(){api('/api/users').then(function(j){if(j.ok)render(j);else show(false)})}
+function quick(id,amt){api('/api/diamonds',{method:'POST',body:JSON.stringify({id:id,amount:amt})}).then(function(j){toast(j.ok?'✅ انجام شد':'❌ خطا');load()})}
+function giveDiamonds(){
+  var id=Number(qs('dId').value),amt=Number(qs('dAmt').value);
+  if(!id||!amt)return toast('آیدی و مقدار را وارد کنید');
+  api('/api/diamonds',{method:'POST',body:JSON.stringify({id:id,amount:amt})}).then(function(j){
+    toast(j.ok?('✅ موجودی جدید: '+fa(j.diamonds)+' 💎'):'❌ '+j.error);load();
+  });
+}
+function toggleSelf(id,on){api('/api/toggle-self',{method:'POST',body:JSON.stringify({id:id,on:on})}).then(function(j){toast(j.ok?'✅ انجام شد':'❌ '+j.error);load()})}
+function broadcast(){
+  var t=qs('bText').value.trim();if(!t)return toast('متن را وارد کنید');
+  api('/api/broadcast',{method:'POST',body:JSON.stringify({text:t})}).then(function(j){toast(j.ok?('📤 ارسال به '+fa(j.sent)+' کاربر'):'❌ خطا');qs('bText').value=''});
+}
+function runCron(){api('/api/run-cron',{method:'POST'}).then(function(j){toast(j.ok?('⏰ شارژ: '+fa(j.charged)+' | خاموش: '+fa(j.deactivated)):'❌ خطا');load()})}
+
+(function(){
+  var k=null;try{k=localStorage.getItem('adminKey')}catch(_){}
+  var q=new URLSearchParams(location.search).get('key');
+  KEY=q||k;
+  if(KEY){api('/api/users').then(function(j){if(j.ok){show(true);render(j)}else{show(false)}})}
+  else show(false);
+})();
+</script>
+</body>
+</html>

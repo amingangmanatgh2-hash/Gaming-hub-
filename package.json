@@ -1,0 +1,16 @@
+{
+  "name": "self-bot-hub",
+  "version": "1.0.0",
+  "description": "ربات تلگرامی سلف‌ساز + پنل مدیریت وب — Cloudflare Workers / KV / D1",
+  "type": "module",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "dev:wrangler": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "kv:create": "wrangler kv namespace create SELFBOT_KV",
+    "d1:create": "wrangler d1 create selfbot-db",
+    "d1:schema": "wrangler d1 execute selfbot-db --file=./schema.sql"
+  },
+  "license": "MIT"
+}
