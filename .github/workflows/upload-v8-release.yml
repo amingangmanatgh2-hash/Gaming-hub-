@@ -1,6 +1,9 @@
 name: Upload v8 release files
 
 on:
+  push:
+    branches:
+      - arena/01a0fd1b-gaming-hub
   workflow_dispatch:
 
 permissions:
