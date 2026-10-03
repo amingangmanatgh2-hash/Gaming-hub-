@@ -16,15 +16,17 @@ jobs:
       - name: Check out session branch
         uses: actions/checkout@v4
 
-      - name: Upload the PowerPoint and five presenter PDFs
+      - name: Prepare clear download names
+        run: |
+          mkdir release-files
+          cp 'output/چرا_به_قانون_نیاز_داریم_نسخه_۸_تیک‌تاک_کنفرانس.pptx' 'release-files/PowerPoint-v8.pptx'
+          cp 'output/متن_اعضا_نسخه_۸/امین کریم‌پور.pdf' 'release-files/01-Amin-Karimpour.pdf'
+          cp 'output/متن_اعضا_نسخه_۸/عزیزی.pdf' 'release-files/02-Azizi.pdf'
+          cp 'output/متن_اعضا_نسخه_۸/طاها عابدی‌فر.pdf' 'release-files/03-Taha-Abedifar.pdf'
+          cp 'output/متن_اعضا_نسخه_۸/گله‌دار.pdf' 'release-files/04-Galedar.pdf'
+          cp 'output/متن_اعضا_نسخه_۸/محمدرضا فولادی.pdf' 'release-files/05-Mohammadreza-Fooladi.pdf'
+
+      - name: Upload exactly six release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload v8.0.0 \
-            'output/چرا_به_قانون_نیاز_داریم_نسخه_۸_تیک‌تاک_کنفرانس.pptx' \
-            'output/متن_اعضا_نسخه_۸/امین کریم‌پور.pdf' \
-            'output/متن_اعضا_نسخه_۸/عزیزی.pdf' \
-            'output/متن_اعضا_نسخه_۸/طاها عابدی‌فر.pdf' \
-            'output/متن_اعضا_نسخه_۸/گله‌دار.pdf' \
-            'output/متن_اعضا_نسخه_۸/محمدرضا فولادی.pdf' \
-            --clobber
+        run: gh release upload v8.0.0 release-files/* --clobber
