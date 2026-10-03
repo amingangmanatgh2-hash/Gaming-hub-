@@ -1,0 +1,27 @@
+name: Upload v8 release files
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out session branch
+        uses: actions/checkout@v4
+
+      - name: Upload the PowerPoint and five presenter PDFs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload v8.0.0 \
+            'output/چرا_به_قانون_نیاز_داریم_نسخه_۸_تیک‌تاک_کنفرانس.pptx' \
+            'output/متن_اعضا_نسخه_۸/امین کریم‌پور.pdf' \
+            'output/متن_اعضا_نسخه_۸/عزیزی.pdf' \
+            'output/متن_اعضا_نسخه_۸/طاها عابدی‌فر.pdf' \
+            'output/متن_اعضا_نسخه_۸/گله‌دار.pdf' \
+            'output/متن_اعضا_نسخه_۸/محمدرضا فولادی.pdf' \
+            --clobber
