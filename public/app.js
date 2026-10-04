@@ -211,6 +211,7 @@ const accStatus = a => {
 /* ---------------- داشبورد ---------------- */
 async function viewDashboard(view) {
   view.innerHTML = `<div class="topbar"><h2>📊 داشبورد</h2><div class="actions"><button class="btn ghost sm" onclick="location.reload()">↻</button></div></div><div class="spin" style="margin:60px auto"></div>`
+  await loadNotifs()
   await refreshAccounts(true)
   renderDash(view)
 }

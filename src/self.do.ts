@@ -38,6 +38,7 @@ export class SelfDO extends DurableObject<Env> {
   private aesKey: CryptoKey | null = null
   private waiters: { code?: (v: string) => void; password?: (v: string) => void } = {}
   private loginTimeout: any = null
+  private loginBusy = false
   private logBuffer: LogBuf[] = []
   private persistDirty = false
   private eng: EngineHooks | null = null
@@ -81,7 +82,11 @@ export class SelfDO extends DurableObject<Env> {
     if (stats) this.stats = { ...this.freshStats(), ...(stats as Stats) }
     if (this.info) {
       await this.initAes()
-      if (this.state.status === 'connecting') await this.reconnect()
+      // اگر DO وسط لاگین ری‌استارت شده باشد (لاگین مرده است) — پیام مناسب بده
+      if (this.state.status === 'connecting' && !this.loginBusy) {
+        this.state.status = 'error'
+        this.state.lastError = 'فرایند قبلی ناتمام ماند (اجرای پس‌زمینه قطع شد) — دوباره «اتصال» یا «ورود مجدد» را بزنید'
+      }
     }
     this.buildEngine()
     await this.scheduleAlarm()
@@ -268,6 +273,7 @@ export class SelfDO extends DurableObject<Env> {
     this.client = client
     this.wireClient(client)
 
+    this.loginBusy = true
     const runLogin = (async () => {
       const LOGIN_TIMEOUT = 3 * 60_000
       const timeout = new Promise<never>((_, reject) => {
@@ -276,57 +282,62 @@ export class SelfDO extends DurableObject<Env> {
       try {
         await Promise.race([
           (async () => {
-        const params: any = {
-          codeSentCallback: () => {
-            this.state.status = 'awaiting_code'
-            this.log('info', 'کد تأیید ارسال شد — از پنل وارد کنید')
-            this.persist(true).catch(() => {})
-          },
-        }
-        if (phone) {
-          params.phone = phone
-          params.code = async () => {
-            this.state.status = 'awaiting_code'
-            this.persist(true).catch(() => {})
-            return await this.waitInput('code')
-          }
-          params.password = async () => {
-            this.state.status = 'awaiting_password'
-            this.log('info', 'این اکانت رمز دو مرحله‌ای دارد — از پنل وارد کنید')
-            this.persist(true).catch(() => {})
-            return await this.waitInput('password')
-          }
-          params.invalidCodeCallback = (t: string) => {
-            this.log('warn', `${t === 'code' ? 'کد' : 'رمز'} نامعتبر بود، دوباره وارد کنید`)
-            this.state.status = t === 'code' ? 'awaiting_code' : 'awaiting_password'
-          }
-        } else {
-          params.botToken = botToken
-        }
-        const me = await client.start(params)
-        this.state.status = 'connected'
-        this.state.me = {
-          id: me.id,
-          displayName: me.displayName,
-          username: me.username ?? undefined,
-          isBot: !!me.isBot,
-        }
-        this.state.health.connectedSince = Date.now()
-        await this.saveSession(client)
-        this.log('success', `سلف متصل شد: ${me.displayName} (@${me.username ?? '—'})`)
-        this.notify('✅ اکانت متصل شد', `${me.displayName} با موفقیت وارد شد`).catch(() => {})
-        await this.persist(true)
-        await this.scheduleAlarm()
+            const params: any = {
+              codeSentCallback: () => {
+                this.state.status = 'awaiting_code'
+                this.log('info', 'کد تأیید ارسال شد — از پنل وارد کنید')
+                this.persist(true).catch(() => {})
+              },
+            }
+            if (phone) {
+              params.phone = phone
+              params.code = async () => {
+                this.state.status = 'awaiting_code'
+                this.persist(true).catch(() => {})
+                return await this.waitInput('code')
+              }
+              params.password = async () => {
+                this.state.status = 'awaiting_password'
+                this.log('info', 'این اکانت رمز دو مرحله‌ای دارد — از پنل وارد کنید')
+                this.persist(true).catch(() => {})
+                return await this.waitInput('password')
+              }
+              params.invalidCodeCallback = (t: string) => {
+                this.log('warn', `${t === 'code' ? 'کد' : 'رمز'} نامعتبر بود، دوباره وارد کنید`)
+                this.state.status = t === 'code' ? 'awaiting_code' : 'awaiting_password'
+              }
+            } else {
+              params.botToken = botToken
+            }
+            const me = await client.start(params)
+            this.state.status = 'connected'
+            this.state.me = {
+              id: me.id,
+              displayName: me.displayName,
+              username: me.username ?? undefined,
+              isBot: !!me.isBot,
+            }
+            this.state.health.connectedSince = Date.now()
+            await this.saveSession(client)
+            this.log('success', `سلف متصل شد: ${me.displayName} (@${me.username ?? '—'})`)
+            this.notify('✅ اکانت متصل شد', `${me.displayName} با موفقیت وارد شد`).catch(() => {})
+            this.loginBusy = false
+            await this.persist(true)
+            await this.scheduleAlarm()
           })(),
           timeout,
         ])
       } catch (e: any) {
-        this.state.status = 'error'
-        this.state.lastError = String(e?.errorMessage ?? e?.message ?? e)
-        this.log('error', `خطای لاگین: ${this.state.lastError}`)
-        try { await this.client?.close() } catch {}
-        if (this.client === client) this.client = null
-        await this.persist(true)
+        // اگر این لاگین با لاگین جدیدتری جایگزین شده، وضعیت را دست نزن
+        if (this.client === client) {
+          this.state.status = 'error'
+          this.state.lastError = String(e?.errorMessage ?? e?.message ?? e)
+          this.log('error', `خطای لاگین: ${this.state.lastError}`)
+          try { await client.close() } catch {}
+          this.client = null
+          this.loginBusy = false
+          await this.persist(true)
+        }
       }
     })()
 
@@ -386,6 +397,11 @@ export class SelfDO extends DurableObject<Env> {
   async alarm(): Promise<void> {
     await this.loadAll()
     if (this.info?.type === 'demo') {
+      await this.scheduleAlarm()
+      return
+    }
+    // اگر لاگین تعاملی در جریان است، دخالت نکن
+    if (this.loginBusy) {
       await this.scheduleAlarm()
       return
     }
