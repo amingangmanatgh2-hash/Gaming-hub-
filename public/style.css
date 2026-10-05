@@ -211,3 +211,5 @@ tr:hover td { background: rgba(124, 92, 255, .04); }
   main { padding: 16px 12px; }
   .kv, .kv-3 { grid-template-columns: 1fr; }
 }
+/* setup auto-API panel */
+.card-inset{background:linear-gradient(135deg,rgba(79,70,229,.13),rgba(14,165,233,.08));border:1px solid rgba(129,140,248,.28);border-radius:16px;padding:16px;margin:14px 0 18px}.card-inset .btn{width:100%}.auto-api label{margin-top:4px}.auto-api .hint{margin-bottom:0}

@@ -40,6 +40,8 @@ export class HubDO extends DurableObject<Env> {
   private failCount = 0
   private lockUntil = 0
   private sseWriters: { write: (s: string) => Promise<void>; close: () => void }[] = []
+  // نشست کوتاه‌مدت احراز هویت my.telegram.org فقط برای راه‌اندازی اولیه
+  private mytg: { phone: string; randomHash: string; cookies: string; expires: number } | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -101,6 +103,59 @@ export class HubDO extends DurableObject<Env> {
       await this.ctx.storage.put('config', this.cfg)
       this.addLog({ ts: Date.now(), accountId: null, label: null, level: 'success', msg: 'نصب SelfHub کامل شد — خوش آمدید!' })
       return json({ ok: true })
+    }
+
+    /* ---------- دریافت خودکار API ID/Hash از my.telegram.org ---------- */
+    if (path === '/mytg/start' && method === 'POST') {
+      if (this.cfg) return json({ ok: false, error: 'نصب قبلاً انجام شده است' }, 400)
+      const b = await readJson<any>(req)
+      const phone = String(b.phone ?? '').trim()
+      if (!/^\+?[1-9]\d{6,14}$/.test(phone)) return json({ ok: false, error: 'شماره را با کد کشور وارد کنید؛ مثل +989123456789' }, 400)
+      try {
+        const r = await fetch('https://my.telegram.org/auth/send_password', {
+          method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'SelfHub/1.0' },
+          body: new URLSearchParams({ phone_number: phone }).toString(),
+        })
+        const text = await r.text()
+        if (!r.ok) return json({ ok: false, error: 'my.telegram.org کد ارسال نکرد؛ شماره و دسترسی اینترنت را بررسی کنید' }, 502)
+        let data: any = null; try { data = JSON.parse(text) } catch {}
+        const randomHash = String(data?.random_hash ?? '')
+        if (!randomHash) return json({ ok: false, error: 'پاسخ my.telegram.org نامعتبر بود؛ کمی بعد دوباره تلاش کنید' }, 502)
+        const cookies = r.headers.get('set-cookie') ?? ''
+        this.mytg = { phone, randomHash, cookies, expires: Date.now() + 10 * 60_000 }
+        return json({ ok: true, message: 'کد به تلگرام شما ارسال شد' })
+      } catch { return json({ ok: false, error: 'ارتباط با my.telegram.org برقرار نشد' }, 502) }
+    }
+
+    if (path === '/mytg/verify' && method === 'POST') {
+      if (this.cfg) return json({ ok: false, error: 'نصب قبلاً انجام شده است' }, 400)
+      const b = await readJson<any>(req)
+      const code = String(b.code ?? '').trim()
+      if (!this.mytg || this.mytg.expires < Date.now()) return json({ ok: false, error: 'نشست منقضی شد؛ دوباره شماره را ثبت کنید' }, 400)
+      if (!/^\d{3,8}$/.test(code)) return json({ ok: false, error: 'کد تلگرام نامعتبر است' }, 400)
+      try {
+        const headers: Record<string,string> = { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'SelfHub/1.0' }
+        if (this.mytg.cookies) headers.cookie = this.mytg.cookies
+        const r = await fetch('https://my.telegram.org/auth/login', { method: 'POST', headers, body: new URLSearchParams({ phone_number: this.mytg.phone, random_hash: this.mytg.randomHash, password: code }).toString() })
+        const loginText = await r.text()
+        if (!r.ok || /error|invalid|wrong/i.test(loginText)) return json({ ok: false, error: 'کد اشتباه است یا منقضی شده؛ کد جدید بگیرید' }, 401)
+        const cookie = [this.mytg.cookies, r.headers.get('set-cookie') ?? ''].filter(Boolean).join('; ')
+        const apps = await fetch('https://my.telegram.org/apps', { headers: { cookie, 'user-agent': 'SelfHub/1.0' } })
+        const html = await apps.text()
+        const idMatch = html.match(/name=["']?app_id["']?[^>]*value=["']?(\d+)/i) || html.match(/app_id[^\d]{0,20}(\d+)/i)
+        const hashMatch = html.match(/name=["']?app_hash["']?[^>]*value=["']?([a-f0-9]{32})/i) || html.match(/app_hash[^a-f0-9]{0,20}([a-f0-9]{32})/i)
+        if (idMatch && hashMatch) { this.mytg = null; return json({ ok: true, apiId: Number(idMatch[1]), apiHash: hashMatch[1], existing: true }) }
+        // حساب تازه معمولاً صفحه ساخت اپ را برمی‌گرداند؛ ساخت خودکار بدون ربات
+        const short = 'selfhub' + Math.random().toString(36).slice(2, 8)
+        const cr = await fetch('https://my.telegram.org/apps/create', { method: 'POST', headers: { ...headers, cookie }, body: new URLSearchParams({ app_title: 'SelfHub', app_shortname: short, app_url: 'https://selfhub.local', app_platform: 'Other', app_desc: 'Personal Telegram automation panel' }).toString() })
+        if (!cr.ok) return json({ ok: false, error: 'ورود انجام شد اما ساخت API در my.telegram.org رد شد؛ از API development tools بسازید' }, 502)
+        const html2 = await (await fetch('https://my.telegram.org/apps', { headers: { cookie, 'user-agent': 'SelfHub/1.0' } })).text()
+        const id2 = html2.match(/name=["']?app_id["']?[^>]*value=["']?(\d+)/i) || html2.match(/app_id[^\d]{0,20}(\d+)/i)
+        const hash2 = html2.match(/name=["']?app_hash["']?[^>]*value=["']?([a-f0-9]{32})/i) || html2.match(/app_hash[^a-f0-9]{0,20}([a-f0-9]{32})/i)
+        this.mytg = null
+        if (!id2 || !hash2) return json({ ok: false, error: 'اپ ساخته شد اما دریافت API ID/Hash ممکن نشد؛ آن‌ها را از صفحه Apps کپی کنید' }, 502)
+        return json({ ok: true, apiId: Number(id2[1]), apiHash: hash2[1], created: true })
+      } catch { return json({ ok: false, error: 'خطا در ارتباط با my.telegram.org؛ می‌توانید API را دستی وارد کنید' }, 502) }
     }
 
     /* ---------- ورود با رمز ---------- */

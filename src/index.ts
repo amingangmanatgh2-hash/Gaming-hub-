@@ -121,6 +121,16 @@ export default {
       return json({ ok: true, installed, authed })
     }
 
+    if (path === '/api/mytg/start' && method === 'POST') {
+      const res = await hub.fetch('https://hub/mytg/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await req.text() })
+      return new Response(await res.text(), { status: res.status, headers: { 'content-type': 'application/json; charset=utf-8' } })
+    }
+
+    if (path === '/api/mytg/verify' && method === 'POST') {
+      const res = await hub.fetch('https://hub/mytg/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await req.text() })
+      return new Response(await res.text(), { status: res.status, headers: { 'content-type': 'application/json; charset=utf-8' } })
+    }
+
     if (path === '/api/setup' && method === 'POST') {
       if (installed) return json({ ok: false, error: 'نصب قبلاً انجام شده است' }, 400)
       const res = await hub.fetch('https://hub/setup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await req.text() })

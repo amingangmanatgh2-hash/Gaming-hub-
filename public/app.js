@@ -56,7 +56,18 @@ function renderSetup() {
     <p class="sub">سلف‌بات تلگرام بدون ربات هلپر — راه‌اندازی فقط چند ثانیه طول می‌کشد</p>
     <div class="card">
       <h3>🚀 راه‌اندازی اولیه</h3>
-      <p class="desc">فیلدهای زیر را از <b>my.telegram.org</b> (بخش API development tools) بگیرید. توکن ربات <b>اختیاری</b> است و فقط برای افزودن یک اکانتِ رباتی استفاده می‌شود — برای کارکرد سلف‌ها هیچ رباتی لازم نیست.</p>
+      <p class="desc">شماره‌تان را بدهید؛ SelfHub کد ورود را از تلگرام می‌گیرد، وارد <b>my.telegram.org</b> می‌شود و API ID و API Hash را خودش دریافت می‌کند. هیچ ربات هلپری لازم نیست.</p>
+      <div class="auto-api card-inset">
+        <label>شماره تلگرام با کد کشور</label>
+        <input id="su-phone" inputmode="tel" placeholder="+989123456789" dir="ltr" />
+        <button class="btn ghost" id="su-send-code" type="button">📲 ارسال کد تلگرام</button>
+        <div id="su-code-box" style="display:none;margin-top:10px">
+          <label>کد ورود تلگرام</label>
+          <input id="su-tg-code" inputmode="numeric" placeholder="کد را از تلگرام وارد کنید" dir="ltr" />
+          <button class="btn" id="su-fetch-api" type="button" style="margin-top:8px">🔐 ورود و دریافت خودکار API</button>
+        </div>
+        <p class="hint" id="su-api-status">یا API ID و Hash را دستی در پایین وارد کنید.</p>
+      </div>
       <label>API ID (عدد)</label>
       <input id="su-api-id" inputmode="numeric" placeholder="مثلاً 255721" dir="ltr" />
       <label>API Hash</label>
@@ -77,6 +88,26 @@ function renderSetup() {
       </div>
     </div>
   </div>`
+
+  $('#su-send-code').onclick = async () => {
+    const phone = $('#su-phone').value.trim()
+    if (!phone) return toast('شماره را با کد کشور وارد کنید', 'err')
+    const r = await api('/api/mytg/start', { body: { phone } })
+    if (!r.ok) return toast(r.error, 'err')
+    $('#su-code-box').style.display = 'block'
+    $('#su-api-status').textContent = 'کد ارسال شد؛ کد داخل تلگرام را وارد کنید.'
+    toast('کد ورود به تلگرام ارسال شد 📲', 'ok')
+  }
+  $('#su-fetch-api').onclick = async () => {
+    const code = $('#su-tg-code').value.trim()
+    if (!code) return toast('کد تلگرام را وارد کنید', 'err')
+    const r = await api('/api/mytg/verify', { body: { code } })
+    if (!r.ok) return toast(r.error, 'err')
+    $('#su-api-id').value = r.apiId
+    $('#su-api-hash').value = r.apiHash
+    $('#su-api-status').textContent = '✅ API ID و API Hash با موفقیت دریافت شد؛ حالا رمز ادمین را بسازید.'
+    toast('API با موفقیت دریافت شد 🎉', 'ok')
+  }
 
   const pw = $('#su-pw')
   pw.addEventListener('input', () => {
