@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Web.Script.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Windows;
 
 namespace AMINKeyboardClipboard
@@ -25,7 +25,8 @@ namespace AMINKeyboardClipboard
 
         private readonly string filePath;
         private readonly List<string> history = new List<string>();
-        private readonly JavaScriptSerializer serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
+        private readonly DataContractJsonSerializer serializer =
+            new DataContractJsonSerializer(typeof(List<string>));
 
         private string lastKnownClipboardText;
         private bool listening;
@@ -179,10 +180,18 @@ namespace AMINKeyboardClipboard
             {
                 if (!File.Exists(filePath)) return;
 
-                string json = File.ReadAllText(filePath);
-                if (string.IsNullOrWhiteSpace(json)) return;
+                byte[] bytes = File.ReadAllBytes(filePath);
+                if (bytes.Length == 0) return;
 
-                var entries = serializer.Deserialize<List<string>>(json);
+                List<string> entries;
+
+                // FileShare.ReadWrite keeps this working if a second copy of the app
+                // (or a backup tool) happens to have the file open.
+                using (var stream = new MemoryStream(bytes))
+                {
+                    entries = serializer.ReadObject(stream) as List<string>;
+                }
+
                 if (entries == null) return;
 
                 foreach (string entry in entries)
@@ -196,7 +205,7 @@ namespace AMINKeyboardClipboard
             }
             catch
             {
-                // A corrupt history file must never stop the app from starting.
+                // A corrupt or unreadable history file must never stop the app.
                 history.Clear();
             }
         }
@@ -205,7 +214,19 @@ namespace AMINKeyboardClipboard
         {
             try
             {
-                File.WriteAllText(filePath, serializer.Serialize(history));
+                // Write to a temporary file first and swap it in, so a crash or a
+                // power loss cannot leave a half-written history behind.
+                string tempPath = filePath + ".tmp";
+
+                using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    serializer.WriteObject(stream, history);
+                }
+
+                if (File.Exists(filePath))
+                    File.Replace(tempPath, filePath, null);
+                else
+                    File.Move(tempPath, filePath);
             }
             catch
             {
