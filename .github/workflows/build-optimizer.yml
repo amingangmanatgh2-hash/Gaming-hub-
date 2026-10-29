@@ -35,7 +35,7 @@ jobs:
             GamingOptimizer/installer/Output/*.exe
             GamingOptimizer/GamingOptimizer/bin/Release/GamingHubOptimizer.exe
       - name: Publish GitHub Release
-        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: optimizer-v1.0.0
