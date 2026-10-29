@@ -1,0 +1,9 @@
+# Build leftovers and debug symbols (the release .exe files in dist/ ARE tracked
+# on purpose so the app can be downloaded without a toolchain).
+*.pdb
+*.obj
+*.ilk
+*.res
+*.tmp
+*.log
+selftest.log

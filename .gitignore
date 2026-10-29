@@ -4,3 +4,19 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# --- Desktop app subproject: AMIN Keyboard & Clipboard ---
+!amin-kbc/
+!amin-kbc/**
+!amin-kbc/src/
+!amin-kbc/src/**
+!amin-kbc/docs/
+!amin-kbc/docs/**
+!amin-kbc/build/
+!amin-kbc/build/**
+!amin-kbc/installer/
+!amin-kbc/installer/**
+!amin-kbc/tests/
+!amin-kbc/tests/**
+!amin-kbc/dist/
+!amin-kbc/dist/**
