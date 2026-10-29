@@ -4,15 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main, 'arena/**']
-    paths:
-      - 'AMINKeyboardClipboard/**'
-      - '.github/workflows/build-windows.yml'
-    tags:
-      - 'kb-v*'
+    tags: ['kb-v*']
+    paths-ignore:
+      - '**/*.md'
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   build:
@@ -30,29 +27,10 @@ jobs:
             --nologo 2>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Report build log on failure
-        if: failure()
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          if (-not (Test-Path build.log)) { "no build log" | Out-File build.log }
-          $log = (Get-Content build.log -Raw)
-          if ($log.Length -gt 60000) { $log = $log.Substring($log.Length - 60000) }
-          $log | Out-File -FilePath body.md -Encoding utf8
-          $existing = gh issue list --search "CI BUILD LOG in:title" --state open --json number --jq '.[0].number'
-          if ($existing) {
-            gh issue comment $existing --body-file body.md
-          } else {
-            gh issue create --title "CI BUILD LOG" --body-file body.md
-          }
-          Get-ChildItem AMINKeyboardClipboard/obj -Recurse -Filter *.log -ErrorAction SilentlyContinue | Select-Object FullName
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Show build output
         if: success()
         shell: pwsh
-        run: Get-ChildItem -Recurse AMINKeyboardClipboard/bin/Release | Select-Object FullName, Length
+        run: Get-ChildItem -Recurse AMINKeyboardClipboard/bin/Release/net48 | Select-Object Name, Length
 
       - name: Install Inno Setup
         shell: pwsh
@@ -64,7 +42,29 @@ jobs:
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
           & $iscc 'AMINKeyboardClipboard/installer/AMINKeyboardClipboard.iss'
+          Write-Host "exit code: $LASTEXITCODE"
           Get-ChildItem AMINKeyboardClipboard/installer/Output
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Package portable build
+        shell: pwsh
+        run: |
+          Compress-Archive -Path 'AMINKeyboardClipboard/bin/Release/net48/*' `
+            -DestinationPath 'AMINKeyboardClipboard-portable.zip' -Force
+          Get-FileHash AMINKeyboardClipboard/installer/Output/*.exe -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
+            Out-File -FilePath SHA256SUMS.txt -Encoding ascii
+          Get-FileHash AMINKeyboardClipboard-portable.zip -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  AMINKeyboardClipboard-portable.zip" } |
+            Out-File -FilePath SHA256SUMS.txt -Encoding ascii -Append
+          Get-Content SHA256SUMS.txt
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Upload portable exe
         uses: actions/upload-artifact@v4
@@ -77,3 +77,27 @@ jobs:
         with:
           name: AMINKeyboardClipboard-setup
           path: AMINKeyboardClipboard/installer/Output/*.exe
+
+      # ---- Release (tags kb-v*) ------------------------------------------
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/kb-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $assets = @(
+            'AMINKeyboardClipboard/installer/Output/AMINKeyboardClipboardSetup.exe',
+            'AMINKeyboardClipboard-portable.zip',
+            'SHA256SUMS.txt'
+          )
+
+          $existing = gh release view $tag --json tagName --jq .tagName 2>$null
+          if ($existing) {
+            gh release upload $tag @assets --clobber
+          } else {
+            gh release create $tag @assets `
+              --title "AMIN Keyboard & Clipboard 1.0.0" `
+              --notes-file AMINKeyboardClipboard/RELEASE_NOTES.md `
+              --latest=false
+          }
