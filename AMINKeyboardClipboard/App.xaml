@@ -1,0 +1,84 @@
+<Application x:Class="AMINKeyboardClipboard.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#12131D"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#1C1E2B"/>
+        <SolidColorBrush x:Key="PanelBrush2" Color="#26293A"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#7157E8"/>
+        <SolidColorBrush x:Key="AccentBlueBrush" Color="#388BFF"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="#B44058"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#F6F4FF"/>
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#B9B8C8"/>
+
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Background" Value="{StaticResource PanelBrush2}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.85" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.70" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.40" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource PanelBrush2}" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CaretBrush" Value="{StaticResource TextBrush}" />
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}" />
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Chrome"
+                                Background="Transparent"
+                                CornerRadius="8">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#2F3348" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#3A3468" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

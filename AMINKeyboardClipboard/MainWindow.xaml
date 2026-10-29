@@ -1,0 +1,286 @@
+<Window x:Class="AMINKeyboardClipboard.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AMIN Keyboard &amp; Clipboard"
+        Width="940"
+        Height="660"
+        MinWidth="780"
+        MinHeight="560"
+        Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI, Tahoma"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock Text="AMIN Keyboard &amp; Clipboard"
+                           FontSize="25"
+                           FontWeight="SemiBold"/>
+                <TextBlock Text="کیبورد فارسی/انگلیسی شناور + تاریخچه متنی کلیپ‌بورد — کاملاً محلی"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           Margin="0,6,0,0"
+                           FontSize="14"/>
+            </StackPanel>
+
+            <Button Content="خروج"
+                    HorizontalAlignment="Left"
+                    Background="{StaticResource DangerBrush}"
+                    Click="Exit_Click"/>
+        </Grid>
+
+        <TabControl x:Name="Tabs"
+                    Grid.Row="1"
+                    Background="{StaticResource PanelBrush}"
+                    BorderThickness="0"
+                    Padding="6">
+
+            <!-- ================= Keyboard tab ================= -->
+            <TabItem Header="  کیبورد مجازی  ">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="کیبورد مجازی فارسی و انگلیسی"
+                               FontSize="21"
+                               FontWeight="SemiBold"/>
+
+                    <WrapPanel Grid.Row="1" Margin="0,16,0,14">
+                        <Button Content="نمایش کیبورد شناور"
+                                Background="{StaticResource AccentBrush}"
+                                Click="ShowKeyboard_Click"/>
+                        <Button Content="مخفی کردن کیبورد"
+                                Click="HideKeyboard_Click"/>
+                        <Button Content="رفتن به تاریخچه کلیپ‌بورد"
+                                Background="{StaticResource AccentBlueBrush}"
+                                Click="OpenClipboard_Click"/>
+                        <TextBlock x:Name="LanguageStatusText"
+                                   VerticalAlignment="Center"
+                                   Margin="14,0,0,0"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   Text="زبان فعلی کیبورد: فارسی"/>
+                    </WrapPanel>
+
+                    <Border Grid.Row="2"
+                            Background="{StaticResource PanelBrush2}"
+                            CornerRadius="12"
+                            Padding="18">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="چطور استفاده کنیم"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"/>
+
+                                <TextBlock Margin="0,12,0,0"
+                                           TextWrapping="Wrap"
+                                           LineHeight="26"
+                                           Foreground="#D9D7E8"
+                                           Text="۱. اول روی برنامه مقصد (Notepad، Word، مرورگر) کلیک کنید و داخل محل تایپ نشانگر را بگذارید.&#x0a;۲. از این پنجره «نمایش کیبورد شناور» را بزنید.&#x0a;۳. با کلیک روی هر کلید، همان کاراکتر به پنجره مقصد ارسال می‌شود.&#x0a;۴. کیبورد همیشه روی پنجره‌های دیگر می‌ماند و جای آن قابل تغییر است.&#x0a;۵. دکمه «فا / EN» زبان را عوض می‌کند و در حالت انگلیسی دکمه Shift حروف بزرگ/کوچک را تغییر می‌دهد."/>
+
+                                <TextBlock Margin="0,18,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           Text="نکته: ویندوز به‌صورت امنیتی اجازه نمی‌دهد برنامه‌ای با دسترسی معمولی، ورودی را به پنجره‌ای که با دسترسی مدیر (Administrator) اجرا شده بفرستد. برای این حالت باید خود برنامه AMIN را هم «Run as administrator» اجرا کنید."/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= Clipboard tab ================= -->
+            <TabItem Header="  تاریخچه کلیپ‌بورد  ">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <TextBlock Text="تاریخچه متنی کلیپ‌بورد"
+                                   FontSize="21"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock x:Name="CountText"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   Text="۰ مورد"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0,15,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="SearchBox"
+                                 Height="38"
+                                 VerticalContentAlignment="Center"
+                                 Padding="12,0"
+                                 Margin="0,0,10,0"
+                                 FlowDirection="LeftToRight"
+                                 TextChanged="SearchBox_TextChanged"
+                                 ToolTip="جستجو در تاریخچه"/>
+
+                        <Button Grid.Column="1"
+                                Content="پاک کردن همه"
+                                Background="{StaticResource DangerBrush}"
+                                Click="ClearHistory_Click"/>
+                    </Grid>
+
+                    <Border Grid.Row="2"
+                            Background="{StaticResource PanelBrush2}"
+                            CornerRadius="10"
+                            Padding="6">
+                        <Grid>
+                            <ListBox x:Name="ClipboardList"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="{StaticResource TextBrush}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     MouseDoubleClick="ClipboardList_MouseDoubleClick"
+                                     KeyDown="ClipboardList_KeyDown">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="10,8">
+                                            <TextBlock Text="{Binding Text}"
+                                                       ToolTip="{Binding FullText}"
+                                                       FlowDirection="LeftToRight"
+                                                       TextAlignment="Left"
+                                                       TextWrapping="Wrap"
+                                                       MaxHeight="66"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <TextBlock x:Name="EmptyStateText"
+                                       Text="هنوز متنی کپی نشده است. با Ctrl+C هر متنی را کپی کنید."
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Foreground="{StaticResource MutedTextBrush}"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+
+                    <WrapPanel Grid.Row="3" Margin="0,12,0,0">
+                        <Button Content="کپی مورد انتخاب‌شده"
+                                Background="{StaticResource AccentBrush}"
+                                Click="CopySelected_Click"/>
+                        <Button Content="حذف مورد انتخاب‌شده"
+                                Click="DeleteSelected_Click"/>
+                        <Button Content="باز کردن پوشه داده‌ها"
+                                Click="OpenDataFolder_Click"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= Settings tab ================= -->
+            <TabItem Header="  تنظیمات و حریم خصوصی  ">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="تنظیمات"
+                                   FontSize="21"
+                                   FontWeight="SemiBold"/>
+
+                        <Border Background="{StaticResource PanelBrush2}"
+                                CornerRadius="12"
+                                Padding="18"
+                                Margin="0,14,0,0">
+                            <StackPanel>
+                                <CheckBox x:Name="StartupCheckBox"
+                                          Content="اجرای برنامه هنگام ورود به ویندوز"
+                                          Foreground="{StaticResource TextBrush}"
+                                          Checked="StartupCheckBox_Changed"
+                                          Unchecked="StartupCheckBox_Changed"/>
+                                <TextBlock Margin="0,8,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           Text="این گزینه فقط یک مقدار در HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run ثبت می‌کند و به دسترسی مدیر نیاز ندارد."/>
+
+                                <Separator Margin="0,16" Background="#3A3D52"/>
+
+                                <TextBlock Text="میانبر باز کردن پنجره"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="ShortcutStatusText"
+                                           Margin="0,6,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           Text="در حال بررسی…"/>
+
+                                <Separator Margin="0,16" Background="#3A3D52"/>
+
+                                <TextBlock Text="وضعیت شنود کلیپ‌بورد"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="ListenerStatusText"
+                                           Margin="0,6,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           Text="در حال بررسی…"/>
+
+                                <Separator Margin="0,16" Background="#3A3D52"/>
+
+                                <TextBlock Text="محل ذخیره داده‌ها"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="DataPathText"
+                                           Margin="0,6,0,0"
+                                           TextWrapping="Wrap"
+                                           FlowDirection="LeftToRight"
+                                           TextAlignment="Left"
+                                           Foreground="{StaticResource MutedTextBrush}"/>
+                                <WrapPanel Margin="0,10,0,0">
+                                    <Button Content="باز کردن پوشه"
+                                            Click="OpenDataFolder_Click"/>
+                                    <Button Content="حذف کامل داده‌های محلی"
+                                            Background="{StaticResource DangerBrush}"
+                                            Click="ResetLocalData_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource PanelBrush2}"
+                                CornerRadius="12"
+                                Padding="18"
+                                Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="حریم خصوصی"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Margin="0,10,0,0"
+                                           TextWrapping="Wrap"
+                                           LineHeight="25"
+                                           Foreground="#D9D7E8"
+                                           Text="• فقط متن کپی‌شده ذخیره می‌شود؛ تصویر، فایل و هر قالب دیگری نادیده گرفته می‌شود.&#x0a;• هیچ اتصال شبکه‌ای وجود ندارد: نه سرور، نه آمار، نه ارسال داده.&#x0a;• هیچ گذرواژه‌ای خوانده، تشخیص داده یا ذخیره نمی‌شود.&#x0a;• حداکثر ۱۰۰ مورد و هر مورد حداکثر ۲۰٬۰۰۰ کاراکتر نگه داشته می‌شود.&#x0a;• همه داده‌ها در پروفایل کاربر جاری و در قالب JSON ساده ذخیره می‌شوند."/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Margin="2,14,0,6"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   Text="AMIN Keyboard &amp; Clipboard — نسخه ۱.۰.۰ — برای Windows 10 نسخه 1803 و جدیدتر"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock Grid.Row="2"
+                   Margin="3,12,0,0"
+                   Foreground="{StaticResource MutedTextBrush}"
+                   TextWrapping="Wrap"
+                   Text="حریم خصوصی: متن‌ها فقط روی همین رایانه ذخیره می‌شوند. هیچ اطلاعاتی ارسال نمی‌شود."/>
+    </Grid>
+</Window>

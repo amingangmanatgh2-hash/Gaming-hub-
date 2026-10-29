@@ -1,0 +1,59 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'arena/**']
+    paths:
+      - 'AMINKeyboardClipboard/**'
+      - '.github/workflows/build-windows.yml'
+    tags:
+      - 'kb-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build (Release, .NET Framework 4.8)
+        shell: pwsh
+        run: |
+          dotnet build AMINKeyboardClipboard/AMINKeyboardClipboard.csproj `
+            -c Release `
+            -p:Platform=AnyCPU `
+            -warnaserror:false `
+            --nologo
+
+      - name: Show build output
+        shell: pwsh
+        run: Get-ChildItem -Recurse AMINKeyboardClipboard/bin/Release | Select-Object FullName, Length
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          & $iscc 'AMINKeyboardClipboard/installer/AMINKeyboardClipboard.iss'
+          Get-ChildItem AMINKeyboardClipboard/installer/Output
+
+      - name: Upload portable exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMINKeyboardClipboard-portable
+          path: AMINKeyboardClipboard/bin/Release/net48/*
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMINKeyboardClipboard-setup
+          path: AMINKeyboardClipboard/installer/Output/*.exe
