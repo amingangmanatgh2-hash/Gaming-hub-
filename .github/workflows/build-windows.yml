@@ -49,6 +49,29 @@ jobs:
         run: |
           call "${{ steps.vs.outputs.path }}\VC\Auxiliary\Build\vcvars64.bat" && dumpbin /dependents build\x64\AMINKeyboardClipboard.exe && dumpbin /headers build\x64\AMINKeyboardClipboard.exe | findstr /i subsystem
 
+      - name: Assert the exe needs no .NET / no VC++ redistributable
+        shell: pwsh
+        working-directory: AMINKeyboardClipboardNative
+        run: |
+          $vs = "${{ steps.vs.outputs.path }}"
+          $dumpbin = Join-Path $vs 'VC\Tools\MSVC'
+          $dumpbin = (Get-ChildItem $dumpbin -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+          $dumpbin = Join-Path $dumpbin 'bin\Hostx64\x64\dumpbin.exe'
+
+          foreach ($exe in @('build\x64\AMINKeyboardClipboard.exe', 'build\x86\AMINKeyboardClipboard.exe')) {
+            $out = & $dumpbin /dependents $exe
+            Write-Host "---- $exe ----"
+            $out | Write-Host
+
+            $forbidden = @('mscoree.dll', 'clr.dll', 'mscorlib', 'vcruntime140.dll', 'msvcp140.dll', 'ucrtbase.dll')
+            foreach ($f in $forbidden) {
+              if ($out -match [regex]::Escape($f)) {
+                throw "$exe depends on $f - the build must stay runtime-free"
+              }
+            }
+          }
+          Write-Host "OK: only OS DLLs are imported."
+
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
@@ -109,8 +132,9 @@ jobs:
           if ($existing) {
             gh release upload $tag @assets --clobber
           } else {
+            $pretty = $tag -replace '^kb-v', ''
             gh release create $tag @assets `
-              --title "AMIN Keyboard & Clipboard ${{ github.ref_name }}" `
+              --title "AMIN Keyboard & Clipboard $pretty (بدون .NET)" `
               --notes-file RELEASE_NOTES.md `
               --latest=true
           }
