@@ -13,7 +13,8 @@ WPF روی **.NET Framework 4.8** — بدون نصب، بدون سرور، بد
 
 | موضوع | وضعیت |
 |---|---|
-| کامپایل شدن سورس | با GitHub Actions روی `windows-latest` بررسی می‌شود (فایل `.github/workflows/build-windows.yml`) |
+| کامپایل شدن سورس | ✅ تأییدشده — GitHub Actions روی `windows-latest` (`dotnet build -c Release` + کامپایل Inno Setup) |
+| نسخه منتشرشده | ✅ [Release kb-v1.0.0](https://github.com/amingangmanatgh2-hash/Gaming-hub-/releases/tag/kb-v1.0.0) — خروجی همان بیلد CI |
 | اجرا روی دستگاه واقعی (Dell Latitude / Windows 10 1803) | **تست نشده** — نه در این محیط قابل اجراست و نه ادعایش را می‌کنیم |
 | تست دستی کیبورد در Word / Notepad / مرورگر | **تست نشده** — طبق انتظار کار می‌کند، اما باید خودتان امتحان کنید |
 | امضای دیجیتال (Code Signing) | ندارد؛ ویندوز SmartScreen ممکن است هشدار بدهد |
@@ -139,3 +140,7 @@ A small, dependency-free WPF (.NET Framework 4.8) Windows app:
 | 12 | The `.iss` `[UninstallDelete]`/data handling and `.NET` requirement were undocumented | Explicit `.NET 4.8` pre-check in `[Code]`, data-folder behaviour documented |
 | 13 | Every keystroke stole focus, and the whole window flickered | Non-activating window + manual drag + per-key `SendInput` error reporting (including `ERROR_ACCESS_DENIED` → elevation hint) |
 | 14 | Hard-coded `TaskbarIcon`/tray expectations with no tray support | Documented: closing the main window exits; hot key restores it |
+| 15 | `System.Web.Extensions` / `JavaScriptSerializer` made the **WPF markup compiler fail** (`MC1000: Could not find assembly 'System.Web'`) — found by CI, not by inspection | Removed the dependency; history now uses `DataContractJsonSerializer` with an atomic temp-file write |
+| 16 | History was written directly over the live file, so a crash mid-write could truncate it | Write to `.tmp` then `File.Replace`; malformed JSON resets cleanly instead of crashing |
+
+> Items 1–14 came from reading the draft; **item 15 was only found by actually compiling it in CI**, which is the point: a plausible-looking project is not a building one. There was also no `System.Web` reference in the draft's `.csproj` at all, so it failed immediately.
