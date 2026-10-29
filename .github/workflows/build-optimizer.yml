@@ -1,0 +1,63 @@
+name: Build Gaming Hub Optimizer (Windows Setup.exe + Release)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'arena/**']
+    paths:
+      - 'GamingOptimizer/**'
+      - '.github/workflows/build-optimizer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows exe + Setup.exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Build (Release)
+        shell: pwsh
+        run: msbuild "GamingOptimizer\GamingOptimizer\GamingOptimizer.csproj" /p:Configuration=Release /p:Platform=AnyCPU /v:m /nologo
+      - name: Build Inno Setup installer (Setup.exe)
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "GamingOptimizer\installer\GamingOptimizer.iss"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GamingHubOptimizer
+          path: |
+            GamingOptimizer/installer/Output/*.exe
+            GamingOptimizer/GamingOptimizer/bin/Release/GamingHubOptimizer.exe
+      - name: Publish GitHub Release
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: optimizer-v1.0.0
+          name: "🎮 Gaming Hub Optimizer v1.0.0 — Windows FPS/Quality/Display Optimizer"
+          overwrite_files: true
+          files: |
+            GamingOptimizer/installer/Output/GamingHubOptimizer_Setup_1.0.0.exe
+            GamingOptimizer/GamingOptimizer/bin/Release/GamingHubOptimizer.exe
+          body: |
+            ## 🎮 Gaming Hub Optimizer v1.0.0
+
+            بهینه‌ساز ویندوز برای بازی — **FPS + کیفیت تصویر + دیسپلی** (WPF / .NET Framework 4.8 — ویندوز ۱۰/۱۱)
+
+            ### 📥 نصب
+            فایل **`GamingHubOptimizer_Setup_1.0.0.exe`** را دانلود و اجرا کنید (نیازمند دسترسی ادمین).
+            نسخه‌ی بدون نصب: `GamingHubOptimizer.exe`
+
+            ### ✨ قابلیت‌ها
+            - 📊 **داشبورد:** اسکن CPU/GPU/RAM/مانیتور + امتیاز گیمینگ سیستم + پاک‌سازی Temp و Shader Cache
+            - 🏆 **پروفایل Max FPS:** Game Mode، خاموشی Game DVR، HAGS، پلن Ultimate Performance، اولویت GPU/CPU بازی‌ها
+            - 💎 **پروفایل Ultra Quality:** بهترین جلوه‌های بصری، ClearType، ایم خام موس (بدون شتاب موس)
+            - 🖥 **دیسپلی:** گزارش رزولوشن/هرتز + چک‌لیست G-Sync/FreeSync و میانبر تنظیمات دیسپلی و گرافیک ویندوز
+            - 🛡 **امن و برگشت‌پذیر:** قبل از هر تغییر بکاپ رجیستری گرفته می‌شود + دکمه‌ی Restore و ساخت Restore Point ویندوز
+
+            > ⚠ بعضی تغییرات (HAGS، پلن پاور) بعد از ری‌استارت کامل اثر می‌کنند.

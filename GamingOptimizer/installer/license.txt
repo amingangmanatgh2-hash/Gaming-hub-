@@ -1,0 +1,3 @@
+Gaming Hub Optimizer v1.0.0
+Free to use. All tweaks are backed up before applying and can be restored from inside the app.
+No telemetry. Use at your own discretion — a Windows Restore Point is recommended before applying tweaks.
