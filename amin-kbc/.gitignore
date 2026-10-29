@@ -7,3 +7,7 @@
 *.tmp
 *.log
 selftest.log
+
+# Python caches
+__pycache__/
+*.pyc
