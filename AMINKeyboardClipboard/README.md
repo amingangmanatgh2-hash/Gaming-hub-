@@ -1,5 +1,13 @@
 <div dir="rtl">
 
+> ### ⚠️ این نسخه قدیمی است — از نسخه بومی استفاده کنید
+> این پروژه به **.NET Framework 4.8** نیاز دارد و روی بعضی دستگاه‌های Windows 10 1803
+> نصب نمی‌شود («The .NET Framework 4.8.1 is not supported on this operating system»).
+> نسخه بدون هیچ پیش‌نیاز: [`AMINKeyboardClipboardNative/`](../AMINKeyboardClipboardNative/README.md)
+> — همان قابلیت‌ها، با C/Win32 و بدون رانتایم.
+
+<div dir="rtl">
+
 # ⌨️ AMIN Keyboard &amp; Clipboard
 
 کیبورد مجازی **فارسی/انگلیسی** + تاریخچه **متنی** کلیپ‌بورد برای ویندوز.

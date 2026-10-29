@@ -162,13 +162,23 @@ DEPLOY.md         ← راهنمای دپلوی گام‌به‌گام
 
 ## 🖥 پروژه دسکتاپ ویندوز (جدا از سلف‌بات)
 
-در پوشه‌ی [`AMINKeyboardClipboard/`](./AMINKeyboardClipboard/README.md) یک برنامه‌ی مستقل WPF (.NET Framework 4.8) قرار دارد:
+دو نسخه در این مخزن هست:
 
-- **کیبورد مجازی فارسی/انگلیسی شناور** که با `SendInput` متن یونیکد تایپ می‌کند و فوکوس پنجره مقصد را نمی‌دزدد.
-- **تاریخچه متنی کلیپ‌بورد** (حداکثر ۱۰۰ مورد، فقط متن، کاملاً محلی در `%LocalAppData%`).
-- نصب‌کننده Inno Setup 6 با رابط فارسی/انگلیسی و نصب per-user (بدون UAC).
+| نسخه | مسیر | وابستگی |
+|---|---|---|
+| ✅ **بومی (توصیه‌شده)** | [`AMINKeyboardClipboardNative/`](./AMINKeyboardClipboardNative/README.md) | **هیچ** — C/Win32، بدون .NET |
+| قدیمی (WPF) | [`AMINKeyboardClipboard/`](./AMINKeyboardClipboard/README.md) | .NET Framework 4.8 |
 
-این بخش هیچ ارتباطی با کد Worker ندارد و به‌صورت جداگانه بیلد می‌شود:
-`.github/workflows/build-windows.yml` → خروجی `exe` + نصب‌کننده به‌عنوان Artifact/Release.
+نسخه بومی یک فایل اجرایی Win32 است که CRT به‌صورت استاتیک در آن لینک شده؛
+روی Windows 7 SP1 تا Windows 11 (۳۲ و ۶۴ بیتی) بدون نصب هیچ رانتایمی اجرا می‌شود.
+دلیل ساختش این بود که نصب نسخه .NET روی بعضی دستگاه‌های Windows 10 1803
+با خطای «.NET Framework 4.8.1 is not supported» شکست می‌خورد.
+
+- کیبورد مجازی فارسی/انگلیسی شناور که فوکوس پنجره مقصد را نمی‌دزدد.
+- تاریخچه متنی کلیپ‌بورد (۱۰۰ مورد، فقط متن، کاملاً محلی).
+- نصب‌کننده Inno Setup 6 با رابط فارسی/انگلیسی، بدون پیش‌نیاز رانتایم.
+
+بیلد جداگانه: `.github/workflows/build-windows.yml` → کامپایل با MSVC (x64 + x86)
+و انتشار نصب‌کننده به‌عنوان Release.
 
 </div>

@@ -10,3 +10,8 @@ AMINKeyboardClipboard/bin/
 AMINKeyboardClipboard/obj/
 AMINKeyboardClipboard/installer/Output/
 *.user
+
+# AMIN native build outputs
+AMINKeyboardClipboardNative/build/
+*.obj
+*.res

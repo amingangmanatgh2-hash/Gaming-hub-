@@ -1,4 +1,7 @@
-name: Build Windows app
+name: Build Windows app (native)
+
+# Builds the native Win32 app (no .NET at all) and, on a kb-v* tag, publishes a
+# GitHub release with the installer, both portable builds and SHA-256 checksums.
 
 on:
   workflow_dispatch:
@@ -19,18 +22,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build (Release, .NET Framework 4.8)
+      - name: Locate Visual Studio C++ toolchain
+        id: vs
         shell: pwsh
         run: |
-          dotnet build AMINKeyboardClipboard/AMINKeyboardClipboard.csproj `
-            -c Release `
-            --nologo 2>&1 | Tee-Object -FilePath build.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found" }
+          $path = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $path) { throw "No MSVC toolchain found" }
+          Write-Host "Visual Studio: $path"
+          "path=$path" >> $env:GITHUB_OUTPUT
 
-      - name: Show build output
-        if: success()
-        shell: pwsh
-        run: Get-ChildItem -Recurse AMINKeyboardClipboard/bin/Release/net48 | Select-Object Name, Length
+      - name: Build x64
+        shell: cmd
+        working-directory: AMINKeyboardClipboardNative
+        run: call "${{ steps.vs.outputs.path }}\VC\Auxiliary\Build\vcvars64.bat" && build.bat x64
+
+      - name: Build x86
+        shell: cmd
+        working-directory: AMINKeyboardClipboardNative
+        run: call "${{ steps.vs.outputs.path }}\VC\Auxiliary\Build\vcvars32.bat" && build.bat x86
+
+      - name: Show dependencies (proof there is no .NET runtime dependency)
+        shell: cmd
+        working-directory: AMINKeyboardClipboardNative
+        run: |
+          call "${{ steps.vs.outputs.path }}\VC\Auxiliary\Build\vcvars64.bat" && dumpbin /dependents build\x64\AMINKeyboardClipboard.exe && dumpbin /headers build\x64\AMINKeyboardClipboard.exe | findstr /i subsystem
 
       - name: Install Inno Setup
         shell: pwsh
@@ -38,57 +55,53 @@ jobs:
 
       - name: Compile installer
         shell: pwsh
+        working-directory: AMINKeyboardClipboardNative
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
-          & $iscc 'AMINKeyboardClipboard/installer/AMINKeyboardClipboard.iss'
-          Write-Host "exit code: $LASTEXITCODE"
-          Get-ChildItem AMINKeyboardClipboard/installer/Output
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & $iscc 'installer\AMINKeyboardClipboard.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          Get-ChildItem installer\Output
 
-      - name: Package portable build
+      - name: Package portable builds and checksums
         shell: pwsh
+        working-directory: AMINKeyboardClipboardNative
         run: |
-          Compress-Archive -Path 'AMINKeyboardClipboard/bin/Release/net48/*' `
-            -DestinationPath 'AMINKeyboardClipboard-portable.zip' -Force
-          Get-FileHash AMINKeyboardClipboard/installer/Output/*.exe -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
-            Out-File -FilePath SHA256SUMS.txt -Encoding ascii
-          Get-FileHash AMINKeyboardClipboard-portable.zip -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  AMINKeyboardClipboard-portable.zip" } |
-            Out-File -FilePath SHA256SUMS.txt -Encoding ascii -Append
+          Compress-Archive -Path 'build\x64\AMINKeyboardClipboard.exe' -DestinationPath 'AMINKeyboardClipboard-win64.zip' -Force
+          Compress-Archive -Path 'build\x86\AMINKeyboardClipboard.exe' -DestinationPath 'AMINKeyboardClipboard-win32.zip' -Force
+
+          $lines = @()
+          foreach ($f in @('installer\Output\AMINKeyboardClipboardSetup.exe',
+                           'AMINKeyboardClipboard-win64.zip',
+                           'AMINKeyboardClipboard-win32.zip')) {
+            $hash = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
+            $lines += "$hash  $(Split-Path $f -Leaf)"
+          }
+          $lines | Out-File -FilePath SHA256SUMS.txt -Encoding ascii
           Get-Content SHA256SUMS.txt
 
-      - name: Upload build log on failure
-        if: failure()
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build.log
+          name: AMINKeyboardClipboard-native
+          path: |
+            AMINKeyboardClipboardNative/build/x64/AMINKeyboardClipboard.exe
+            AMINKeyboardClipboardNative/build/x86/AMINKeyboardClipboard.exe
+            AMINKeyboardClipboardNative/installer/Output/AMINKeyboardClipboardSetup.exe
+            AMINKeyboardClipboardNative/SHA256SUMS.txt
 
-      - name: Upload portable exe
-        uses: actions/upload-artifact@v4
-        with:
-          name: AMINKeyboardClipboard-portable
-          path: AMINKeyboardClipboard/bin/Release/net48/*
-
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: AMINKeyboardClipboard-setup
-          path: AMINKeyboardClipboard/installer/Output/*.exe
-
-      # ---- Release (tags kb-v*) ------------------------------------------
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/kb-v')
         shell: pwsh
+        working-directory: AMINKeyboardClipboardNative
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = "${{ github.ref_name }}"
           $assets = @(
-            'AMINKeyboardClipboard/installer/Output/AMINKeyboardClipboardSetup.exe',
-            'AMINKeyboardClipboard-portable.zip',
+            'installer\Output\AMINKeyboardClipboardSetup.exe',
+            'AMINKeyboardClipboard-win64.zip',
+            'AMINKeyboardClipboard-win32.zip',
             'SHA256SUMS.txt'
           )
 
@@ -97,7 +110,7 @@ jobs:
             gh release upload $tag @assets --clobber
           } else {
             gh release create $tag @assets `
-              --title "AMIN Keyboard & Clipboard 1.0.0" `
-              --notes-file AMINKeyboardClipboard/RELEASE_NOTES.md `
-              --latest=false
+              --title "AMIN Keyboard & Clipboard ${{ github.ref_name }}" `
+              --notes-file RELEASE_NOTES.md `
+              --latest=true
           }
