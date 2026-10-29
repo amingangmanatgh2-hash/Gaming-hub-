@@ -1,0 +1,51 @@
+name: Build AMIN Keyboard & Clipboard (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'AMIN_Keyboard_Clipboard/**'
+      - '.github/workflows/build-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows exe
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: actions/setup-msbuild@v2
+
+      - name: Build (Release)
+        run: msbuild "AMIN_Keyboard_Clipboard\AMIN_Keyboard_Clipboard.sln" /p:Configuration=Release /p:Platform="Any CPU" /v:m /nologo
+
+      - name: Zip the exe
+        shell: pwsh
+        run: Compress-Archive -Path "AMIN_Keyboard_Clipboard\AMIN_Keyboard_Clipboard\bin\Release\AMIN_Keyboard_Clipboard.exe" -DestinationPath "AMIN_Keyboard_Clipboard_Release.zip" -Force
+
+      - name: Build Inno Setup installer (best effort)
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress --accept-source-agreements --accept-package-agreements
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "AMIN_Keyboard_Clipboard\installer\AMIN_Keyboard_Clipboard.iss"
+        continue-on-error: true
+
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMIN_Keyboard_Clipboard_exe
+          path: AMIN_Keyboard_Clipboard_Release.zip
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AMIN_Keyboard_Clipboard_installer
+          path: AMIN_Keyboard_Clipboard\installer\Output\*.exe
+          if-no-files-found: warn

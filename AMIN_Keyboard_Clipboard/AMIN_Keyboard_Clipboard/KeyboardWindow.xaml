@@ -1,0 +1,21 @@
+<Window x:Class="AMIN_Keyboard_Clipboard.KeyboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:AMIN_Keyboard_Clipboard.Controls"
+        Title="AMIN Keyboard" Width="560" Height="340"
+        WindowStyle="None" Topmost="True" ShowInTaskbar="False" Focusable="False"
+        ResizeMode="NoResize"
+        Background="{StaticResource PrimaryBackground}"
+        FontFamily="Segoe UI" FontSize="13">
+    <Border x:Name="card" Style="{StaticResource CardStyle}" Margin="8"
+            MouseLeftButtonDown="Card_MouseLeftButtonDown">
+        <StackPanel>
+            <Grid Margin="0,0,0,8">
+                <TextBlock Text="🗝️ AMIN Virtual Keyboard — click keys to type into the active application"
+                           VerticalAlignment="Center"/>
+                <Button Content="✕" Click="BtnClose_Click" Style="{StaticResource RoundedButton}" Width="30" Height="26" Padding="4,0"/>
+            </Grid>
+            <local:KeyboardPanel x:Name="kbPanel"/>
+        </StackPanel>
+    </Border>
+</Window>
