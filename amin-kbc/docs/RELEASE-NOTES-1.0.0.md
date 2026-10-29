@@ -1,6 +1,21 @@
 # AMIN Keyboard & Clipboard — نسخه Native (بدون .NET) — 1.0.0
 
-کیبورد مجازی فارسی/انگلیسی + تاریخچه کلیپ‌بورد متنی برای **ویندوز ۱۰ (از جمله ۱۸۰۳) و ویندوز ۷ SP1 به بالا**.
+## ⬇️ دانلود مستقیم
+
+| فایل | حجم | لینک |
+|---|---|---|
+| **همه‌چیز در یک ZIP** | ۶۲۳ کیلوبایت | [AMIN-Keyboard-Clipboard-1.0.0.zip](https://github.com/amingangmanatgh2-hash/Gaming-hub-/raw/arena/c5f2ac58-gaming-hub/amin-kbc/dist/AMIN-Keyboard-Clipboard-1.0.0.zip) |
+| نسخه ۶۴ بیتی (پرتابل) | ۶۲۴ کیلوبایت | [AminKeyboardClipboard-x64.exe](https://github.com/amingangmanatgh2-hash/Gaming-hub-/raw/arena/c5f2ac58-gaming-hub/amin-kbc/dist/AminKeyboardClipboard-x64.exe) |
+| نسخه ۳۲ بیتی (پرتابل) | ۶۵۱ کیلوبایت | [AminKeyboardClipboard-x86.exe](https://github.com/amingangmanatgh2-hash/Gaming-hub-/raw/arena/c5f2ac58-gaming-hub/amin-kbc/dist/AminKeyboardClipboard-x86.exe) |
+| چک‌سام SHA-256 | — | [SHA256SUMS.txt](https://github.com/amingangmanatgh2-hash/Gaming-hub-/blob/arena/c5f2ac58-gaming-hub/amin-kbc/dist/SHA256SUMS.txt) |
+| راهنمای فارسی | — | [INSTALL-FA.md](https://github.com/amingangmanatgh2-hash/Gaming-hub-/blob/arena/c5f2ac58-gaming-hub/amin-kbc/docs/INSTALL-FA.md) |
+| سورس کامل | — | [پوشه amin-kbc](https://github.com/amingangmanatgh2-hash/Gaming-hub-/tree/arena/c5f2ac58-gaming-hub/amin-kbc) |
+
+> پس از دانلود، مقدار SHA-256 را با `SHA256SUMS.txt` مقایسه کنید
+> (در PowerShell: `Get-FileHash .\AminKeyboardClipboard-x64.exe -Algorithm SHA256`).
+
+> نکته: فایل‌های این Release به‌صورت *asset* آپلود نشده‌اند (آپلود از محیط ساخت ممکن نبود)؛
+> لینک‌های بالا به همان commit تگ‌شده در مخزن اشاره می‌کنند و مستقیم دانلود می‌شوند.
 
 این نسخه با **C++17 و Win32 خالص** ساخته شده و **به هیچ Runtime یا .NET نیاز ندارد** —
 فقط یک فایل اجرایی. مناسب Dell Latitude E5570 با ۸ گیگابایت رم.
