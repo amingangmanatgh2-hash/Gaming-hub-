@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AMIN IDE — محیط برنامه‌نویسی Arduino، کاملاً offline</title>
+  <meta name="description" content="AMIN IDE — یک Arduino IDE مبتنی بر مرورگر با کامپایل واقعی AVR در مرورگر، بدون فیلتر شکن و کاملاً offline">
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ===================== TOP BAR ===================== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+            <rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="url(#lg)" stroke-width="2"/>
+            <rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="url(#lg)" stroke-width="1.6"/>
+            <circle cx="7" cy="7" r="1.5" fill="#22d3ee"/><circle cx="17" cy="7" r="1.5" fill="#8b5cf6"/>
+            <circle cx="7" cy="17" r="1.5" fill="#8b5cf6"/><circle cx="17" cy="17" r="1.5" fill="#22d3ee"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <b>AMIN IDE</b>
+          <span class="badge-offline" title="همراه با تورلن AVR — بدون فیلتر شکن">offline</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="tool-group">
+          <button class="btn btn-ghost" id="btnNew" title="اسکرت جدید">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span data-i18n="newSketch">اسکرت جدید</span>
+          </button>
+          <button class="btn btn-ghost" id="btnOpen" title="باز کردن فایل .ino">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span data-i18n="open">باز کردن</span>
+          </button>
+          <button class="btn btn-ghost" id="btnSave" title="ذخیره (Ctrl+S)">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 3h11l3 3v15H5V3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 3v6h7M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span data-i18n="save">ذخیره</span>
+          </button>
+          <button class="btn btn-ghost" id="btnDownload" title="دانلود فایل .ino">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="downloadIno">دانلود .ino</span>
+          </button>
+        </div>
+
+        <div class="tool-group">
+          <label class="field-label" for="boardSelect" data-i18n="board">برد</label>
+          <select id="boardSelect" class="select"></select>
+        </div>
+
+        <div class="tool-group">
+          <button class="btn btn-primary" id="btnVerify" title="کامپایل و بررسی خطاها (Ctrl+Enter)">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="verify">بررسی و رفع خطا</span>
+          </button>
+          <button class="btn btn-accent" id="btnUpload" title="کامپایل و دانلود Hex برای بارگذاری">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 20V4m0 0 4 4m-4-4-4 4M5 4h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="upload">بارگذاری</span>
+          </button>
+          <button class="btn btn-ghost" id="btnSerial" title="مونیتوری سری">
+            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 10h4M6 14h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span data-i18n="serialMonitor">مونیتوری سری</span>
+          </button>
+        </div>
+
+        <div class="tool-group right">
+          <button class="btn btn-ghost btn-icon" id="btnLang" title="تغییر زبان">
+            <span id="langLabel">EN</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== WORKSPACE ===================== -->
+    <div class="workspace">
+      <!-- sidebar -->
+      <aside class="sidebar">
+        <button class="side-btn active" data-panel="files" title="فایل‌ها">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 6a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        </button>
+        <button class="side-btn" data-panel="examples" title="نمونه‌ها">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 5l8 4 8-4v14l-8 4-8-4V5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="side-btn" data-panel="libs" title="کتابخانه‌ها">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Zm0 0a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2m12-13v17" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        </button>
+        <button class="side-btn" data-panel="settings" title="تنظیمات">
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.1-7.1 2.1 2.1M6.9 17.1l-2.1-2.1m10.4 2.1-2.1-2.1M6.9 6.9 4.8 4.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+
+        <div class="side-panel" id="panelFiles">
+          <div class="panel-head"><b data-i18n="files">فایل‌ها</b><button class="mini-btn" id="btnAddFile" title="فایل جدید">＋</button></div>
+          <div class="panel-list" id="fileList"></div>
+        </div>
+        <div class="side-panel hidden" id="panelExamples">
+          <div class="panel-head"><b data-i18n="examples">نمونه‌ها</b></div>
+          <div class="panel-list" id="exampleList"></div>
+        </div>
+        <div class="side-panel hidden" id="panelLibs">
+          <div class="panel-head"><b data-i18n="libs">کتابخانه‌ها</b></div>
+          <div class="panel-hint" data-i18n="libsHint">همه کتابخانه‌ها از پیش در محیط offline بسته‌بندی شده‌اند.</div>
+          <div class="panel-list" id="libList"></div>
+        </div>
+        <div class="side-panel hidden" id="panelSettings">
+          <div class="panel-head"><b data-i18n="settings">تنظیمات</b></div>
+          <div class="panel-hint" data-i18n="settingsHint"> تمام داده‌ها روی همین مرورگر ذخیره می‌شوند.</div>
+          <div class="panel-item">
+            <b data-i18n="boardMcu">میکروکنترلر</b>
+            <div class="muted" id="setMcu">ATmega328P</div>
+          </div>
+          <div class="panel-item">
+            <b data-i18n="clock">فرکانس کلاک</b>
+            <div class="muted">16 MHz</div>
+          </div>
+          <div class="panel-item">
+            <b data-i18n="flash">فلاش</b>
+            <div class="muted">32 KB</div>
+          </div>
+          <div class="panel-item">
+            <b data-i18n="sram">SRAM</b>
+            <div class="muted">2 KB</div>
+          </div>
+          <div class="panel-item">
+            <b data-i18n="toolchain">تورلن کامپایل</b>
+            <div class="muted">avr-gcc (WASM) — offline</div>
+          </div>
+          <div class="panel-item">
+            <b data-i18n="about">درباره</b>
+            <div class="muted" style="font-size:11px;line-height:1.6">AMIN IDE v<span id="verLabel">1.0.0</span> — كامپايل واقعي AVR تو مرورگر، بدون نياز به فیلتر شکن.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- center: editor -->
+      <main class="center">
+        <div class="tabs-bar" id="tabsBar"></div>
+        <div class="editor-host" id="editorHost">
+          <div class="editor-wrap hidden" id="editorWrap">
+            <div class="line-numbers" id="lineNumbers"></div>
+            <div class="code-area">
+              <pre class="highlight" id="hl" aria-hidden="true"><code></code></pre>
+              <textarea class="ta" id="ta" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off"></textarea>
+            </div>
+          </div>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-logo">🛠</div>
+            <h2>AMIN IDE</h2>
+            <p data-i18n="welcome">به محیط برنامه‌نویسی Arduino خوش آمدید.</p>
+            <p class="muted" data-i18n="welcomeHint">یک اسکرت جدید بسازید، یا از نمونه‌ها یکی را باز کنید و دکمه بررسی و رفع خطا را بزنید.</p>
+            <div class="empty-actions">
+              <button class="btn btn-primary" id="btnWelcomeNew"><span data-i18n="newSketch">اسکرت جدید</span></button>
+              <button class="btn btn-ghost" id="btnWelcomeExamples"><span data-i18n="examples">نمونه‌ها</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="statusbar">
+          <span class="stat" id="statBoard">—</span>
+          <span class="sep"></span>
+          <span class="stat" id="statChip">ATmega328P</span>
+          <span class="sep"></span>
+          <span class="stat" id="statFlash">flash —</span>
+          <span class="flash-bar"><i id="flashBar"></i></span>
+          <span class="spacer"></span>
+          <span class="stat dim" id="statPos">Ln 1, Col 1</span>
+          <span class="sep"></span>
+          <span class="stat" id="statLang">فارسی</span>
+        </div>
+      </main>
+
+      <!-- bottom: console / serial -->
+      <section class="bottom" id="bottomPanel">
+        <div class="bottom-tabs">
+          <button class="btab active" data-bt="console"><span data-i18n="console">خروجی کامپایل</span></button>
+          <button class="btab" data-bt="serial"><span data-i18n="serialMonitor">مونیتوری سری</span></button>
+          <span class="spacer"></span>
+          <button class="mini-btn" id="btnCollapse" title="پنهان کردن">▾</button>
+        </div>
+        <div class="bottom-body">
+          <div class="console-panel" id="consolePanel">
+            <pre class="console" id="console"><span class="console-empty" data-i18n="consoleEmpty">خروجی کامپایل اینجا نشان می‌شود…</span></pre>
+          </div>
+          <div class="serial-panel hidden" id="serialPanel">
+            <div class="serial-controls">
+              <button class="btn btn-ghost btn-sm" id="btnSerialConnect"><span data-i18n="connect">اتصال</span></button>
+              <select id="baudSelect" class="select select-sm">
+                <option>9600</option><option>19200</option><option>38400</option><option>57600</option><option selected>115200</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" id="btnSerialDemo" title="حالت demonstration بدون برد"><span data-i18n="demoMode">حالت دمو</span></button>
+              <button class="btn btn-ghost btn-sm" id="btnSerialClear"><span data-i18n="clear">پاک کردن</span></button>
+              <label class="chk"><input type="checkbox" id="chkAutoscroll" checked><span data-i18n="autoScroll">اسکرول خودکار</span></label>
+              <span class="dot" id="serialDot"></span>
+              <span class="muted" id="serialState" data-i18n="serialOff">سریخاموشی</span>
+            </div>
+            <pre class="serial-log" id="serialLog"><span class="console-empty" data-i18n="serialEmpty">وصول داده‌ها اینجا نمایش داده می‌شود…</span></pre>
+            <div class="serial-input">
+              <input id="serialInput" class="input" placeholder="متن برای ارسال (Enter)…" disabled>
+              <button class="btn btn-accent btn-sm" id="btnSerialSend" data-i18n="send">ارسال</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-root hidden" id="modalRoot"></div>
+  <div class="toast-root" id="toastRoot"></div>
+  <input type="file" id="filePicker" accept=".ino,.txt" hidden>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

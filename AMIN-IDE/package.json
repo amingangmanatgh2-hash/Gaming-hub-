@@ -1,0 +1,19 @@
+{
+  "name": "amin-ide",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AMIN IDE — یک کپی Arduino IDE مبتنی بر مرورگر، کاملاً offline و بدون فیلتر شکن",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node dev.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@horang-corp/avr-gcc-wasm": "0.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0"
+  }
+}

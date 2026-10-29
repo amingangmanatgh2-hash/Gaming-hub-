@@ -1,0 +1,88 @@
+name: Build AMIN IDE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['amin-ide-v*']
+    paths:
+      - 'AMIN-IDE/**'
+      - '.github/workflows/amin-ide.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: AMIN-IDE/package-lock.json
+
+      - name: Install dependencies
+        working-directory: AMIN-IDE
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: AMIN-IDE
+        run: npx tsc --noEmit
+
+      - name: Build (bundle + offline toolchain)
+        working-directory: AMIN-IDE
+        run: npm run build
+
+      - name: Smoke test — real AVR compile in Node
+        working-directory: AMIN-IDE
+        run: node scripts/smoke-toolchain.mjs && node scripts/smoke-bundle.mjs
+
+      - name: Package release zip
+        run: |
+          VER=$(node -p "require('./AMIN-IDE/package.json').version")
+          zip -r -q "AMIN-IDE-v${VER}.zip" AMIN-IDE/dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMIN-IDE_dist
+          path: AMIN-IDE-v*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: AMIN-IDE_dist
+          path: .
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "${{ github.ref_name }}"
+          name: "AMIN IDE v${{ github.ref_name }}"
+          files: AMIN-IDE-v*.zip
+          body: |
+            AMIN IDE — یک کپی Arduino IDE مبتنی بر مرورگر با **کامپایل واقعی AVR در مرورگر**.
+
+            **چرا فرق دارد:**
+            - کاملاً offline و داخلی — **بدون فیلتر شکن** کار می‌کند (همه پکیج‌ها bundle شده‌اند)
+            - کامپایل واقعی با تورلن avr-gcc (WASM) — HEX واقعی تولید می‌کند
+            - مانیتور سری واقعی (Web Serial) + حالت دمو برای تست بدون برد
+            - رابط دوزبانه فارسی/انگلیسی با RTL
+            - بدون هیچ اسکرپ خارجی — منیر مینیمال
+
+            **استفاده:** zip را باز کنید، درون folder کار کنید و `index.html` را با مرورگر (Chrome/Edge) باز کنید.
+            **نکته:** تمام مثال‌ها و کتابخانه‌ها از پیش offline available هستند.
