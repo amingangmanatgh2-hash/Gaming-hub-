@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build:
@@ -26,11 +27,30 @@ jobs:
         run: |
           dotnet build AMINKeyboardClipboard/AMINKeyboardClipboard.csproj `
             -c Release `
-            -p:Platform=AnyCPU `
-            -warnaserror:false `
-            --nologo
+            --nologo 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Report build log on failure
+        if: failure()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (-not (Test-Path build.log)) { "no build log" | Out-File build.log }
+          $log = (Get-Content build.log -Raw)
+          if ($log.Length -gt 60000) { $log = $log.Substring($log.Length - 60000) }
+          $log | Out-File -FilePath body.md -Encoding utf8
+          $existing = gh issue list --search "CI BUILD LOG in:title" --state open --json number --jq '.[0].number'
+          if ($existing) {
+            gh issue comment $existing --body-file body.md
+          } else {
+            gh issue create --title "CI BUILD LOG" --body-file body.md
+          }
+          Get-ChildItem AMINKeyboardClipboard/obj -Recurse -Filter *.log -ErrorAction SilentlyContinue | Select-Object FullName
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show build output
+        if: success()
         shell: pwsh
         run: Get-ChildItem -Recurse AMINKeyboardClipboard/bin/Release | Select-Object FullName, Length
 
