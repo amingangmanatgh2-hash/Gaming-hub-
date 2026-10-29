@@ -38,19 +38,19 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: optimizer-v1.0.0
-          name: "🎮 Gaming Hub Optimizer v1.0.0 — Windows FPS/Quality/Display Optimizer"
+          tag_name: optimizer-v1.0.1
+          name: "🎮 Gaming Hub Optimizer v1.0.1 — Windows FPS/Quality/Display Optimizer"
           overwrite_files: true
           files: |
-            GamingOptimizer/installer/Output/GamingHubOptimizer_Setup_1.0.0.exe
+            GamingOptimizer/installer/Output/GamingHubOptimizer_Setup_1.0.1.exe
             GamingOptimizer/GamingOptimizer/bin/Release/GamingHubOptimizer.exe
           body: |
-            ## 🎮 Gaming Hub Optimizer v1.0.0
+            ## 🎮 Gaming Hub Optimizer v1.0.1
 
             بهینه‌ساز ویندوز برای بازی — **FPS + کیفیت تصویر + دیسپلی** (WPF / .NET Framework 4.8 — ویندوز ۱۰/۱۱)
 
             ### 📥 نصب
-            فایل **`GamingHubOptimizer_Setup_1.0.0.exe`** را دانلود و اجرا کنید (نیازمند دسترسی ادمین).
+            فایل **`GamingHubOptimizer_Setup_1.0.1.exe`** را دانلود و اجرا کنید (نیازمند دسترسی ادمین).
             نسخه‌ی بدون نصب: `GamingHubOptimizer.exe`
 
             ### ✨ قابلیت‌ها
@@ -58,6 +58,7 @@ jobs:
             - 🏆 **پروفایل Max FPS:** Game Mode، خاموشی Game DVR، HAGS، پلن Ultimate Performance، اولویت GPU/CPU بازی‌ها
             - 💎 **پروفایل Ultra Quality:** بهترین جلوه‌های بصری، ClearType، ایم خام موس (بدون شتاب موس)
             - 🖥 **دیسپلی:** گزارش رزولوشن/هرتز + چک‌لیست G-Sync/FreeSync و میانبر تنظیمات دیسپلی و گرافیک ویندوز
+            - ⏹ **جدید v1.0.1 — دکمه‌ی قرمز «غیرفعال‌کردن همه»** بالای برنامه: با یک کلیک همه‌ی توییک‌ها خاموش و ویندوز به پیش‌فرض برمی‌گردد (بدون نیاز به بکاپ)
             - 🛡 **امن و برگشت‌پذیر:** قبل از هر تغییر بکاپ رجیستری گرفته می‌شود + دکمه‌ی Restore و ساخت Restore Point ویندوز
 
             > ⚠ بعضی تغییرات (HAGS، پلن پاور) بعد از ری‌استارت کامل اثر می‌کنند.

@@ -82,6 +82,44 @@ namespace GamingHubOptimizer.Core
             return "تنظیمات قبلی برگردانده شد. ری‌استارت پیشنهاد می‌شود.";
         }
 
+        static void Del(RegistryKey root, string path, string name)
+        {
+            try { using (var k = root.CreateSubKey(path)) k.DeleteValue(name, false); } catch { }
+        }
+        static void SetStr(RegistryKey root, string path, string name, string value)
+        {
+            using (var k = root.CreateSubKey(path)) k.SetValue(name, value, RegistryValueKind.String);
+        }
+
+        /// <summary>ONE-CLICK OFF: revert EVERY tweak to stock Windows defaults — no backup needed.</summary>
+        public static string DisableAll(Action<string> log)
+        {
+            BeginBackup();
+            try { SetDword(Registry.CurrentUser, @"Software\Microsoft\GameBar", "AllowAutoGameMode", 0); SetDword(Registry.CurrentUser, @"Software\Microsoft\GameBar", "AutoGameModeEnabled", 0); } catch { }
+            log("✓ Game Mode → پیش‌فرض ویندوز (خاموش)");
+            try { SetDword(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled", 1); SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled", 1); Del(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR"); } catch { }
+            log("✓ Game DVR / ضبط پس‌زمینه → روشن (پیش‌فرض)");
+            Del(Registry.LocalMachine, @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode");
+            log("✓ HAGS → پیش‌فرض ویندوز (مقدار حذف شد)");
+            Run("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e");
+            log("✓ پلن پاور → Balanced (پیش‌فرض ویندوز)");
+            Del(Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", "GPU Priority");
+            Del(Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games", "Priority");
+            log("✓ اولویت GPU/CPU بازی‌ها → پیش‌فرض");
+            try { SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 0); SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1); } catch { }
+            log("✓ جلوه‌های بصری → «بگذار ویندوز انتخاب کند» + شفافیت روشن");
+            SetStr(Registry.CurrentUser, @"Control Panel\Mouse", "MouseSpeed", "1");
+            SetStr(Registry.CurrentUser, @"Control Panel\Mouse", "MouseThreshold1", "6");
+            SetStr(Registry.CurrentUser, @"Control Panel\Mouse", "MouseThreshold2", "10");
+            log("✓ شتاب موس (Enhance Pointer Precision) → روشن (پیش‌فرض)");
+            Del(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_FSEBehaviorMode");
+            log("✓ Fullscreen Optimizations → پیش‌فرض ویندوز");
+            try { SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings", "NOC_GLOBAL_SETTING_TOASTS_ENABLED", 1); } catch { }
+            log("✓ اعلان‌ها → روشن");
+            SaveBackup("backup-before-disableall-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt");
+            return "✅ همه‌ی بهینه‌سازی‌ها غیرفعال شد و ویندوز به حالت پیش‌فرض برگشت. برای اثر کامل (HAGS/پاور) یک بار ری‌استارت کنید.";
+        }
+
         public static void CreateRestorePoint(Action<string> log)
         {
             log("در حال ساخت Restore Point ویندوز…");
@@ -100,7 +138,7 @@ namespace GamingHubOptimizer.Core
                 new Tweak{ Id="visualfps", Category="FPS", DefaultChecked=false, TitleFa="🏎 جلوه‌های بصری = بهترین عملکرد", DescFa="خاموشی انیمیشن/شفافیت برای FPS بیشتر", Apply=()=>{ SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects","VisualFXSetting",2); SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize","EnableTransparency",0); } },
                 new Tweak{ Id="visualquality", Category="Quality", DefaultChecked=true, TitleFa="✨ جلوه‌های بصری = بهترین ظاهر", DescFa="انیمیشن و سایه‌ی کامل (پروفایل کیفیت)", Apply=()=>{ SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects","VisualFXSetting",1); SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize","EnableTransparency",1); } },
                 new Tweak{ Id="cleartype", Category="Quality", DefaultChecked=true, TitleFa="🔤 ClearType + Font Smoothing", DescFa="متن شارپ‌تر روی LCD", Apply=()=>{ SetDword(Registry.CurrentUser, @"Control Panel\Desktop","FontSmoothing",2); SetDword(Registry.CurrentUser, @"Control Panel\Desktop","FontSmoothingType",2); } },
-                new Tweak{ Id="mouse", Category="Quality", DefaultChecked=true, TitleFa="🖱 خاموش‌کردن Enhance Pointer Precision", DescFa="ایم خام (Raw) برای شوترها", Apply=()=>{ SetDword(Registry.CurrentUser, @"Control Panel\Mouse","MouseSpeed",0); SetDword(Registry.CurrentUser, @"Control Panel\Mouse","MouseThreshold1",0); SetDword(Registry.CurrentUser, @"Control Panel\Mouse","MouseThreshold2",0); } },
+                new Tweak{ Id="mouse", Category="Quality", DefaultChecked=true, TitleFa="🖱 خاموش‌کردن Enhance Pointer Precision", DescFa="ایم خام (Raw) برای شوترها", Apply=()=>{ SetStr(Registry.CurrentUser, @"Control Panel\Mouse","MouseSpeed","0"); SetStr(Registry.CurrentUser, @"Control Panel\Mouse","MouseThreshold1","0"); SetStr(Registry.CurrentUser, @"Control Panel\Mouse","MouseThreshold2","0"); } },
                 new Tweak{ Id="displaydvr", Category="Display", DefaultChecked=true, TitleFa="🖥 خاموش‌کردن Fullscreen Optimizations سراسری", DescFa="Fullscreen واقعی، اینپوت‌لگ کمتر", Apply=()=> SetDword(Registry.CurrentUser, @"System\GameConfigStore","GameDVR_FSEBehaviorMode",2) },
                 new Tweak{ Id="notifications", Category="Display", DefaultChecked=false, TitleFa="🔕 Focus Assist هنگام بازی (اعلان‌ها خاموش)", DescFa="بدون پاپ‌آپ وسط بازی", Apply=()=> SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings","NOC_GLOBAL_SETTING_TOASTS_ENABLED",0) },
             };

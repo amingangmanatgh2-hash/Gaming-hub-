@@ -80,6 +80,14 @@ namespace GamingHubOptimizer
             if (MessageBox.Show("قبل از اعمال، از تنظیمات فعلی بکاپ گرفته می‌شود و هر وقت خواستید از دکمه‌ی «ری‌استور» برمی‌گردد.\nادامه می‌دهید؟", "Gaming Hub Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             Log(TweakService.Apply(chosen, Log));
         }
+        void BtnDisableAll_Click(object s, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("همه‌ی بهینه‌سازی‌ها (Game Mode، Game DVR، HAGS، پلن Ultimate، اولویت بازی، جلوه‌های بصری، شتاب موس، اعلان‌ها و…) خاموش می‌شود و ویندوز به حالت پیش‌فرض برمی‌گردد.\n\nادامه می‌دهید؟", "⏹ غیرفعال‌کردن همه", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+            Log(TweakService.DisableAll(Log));
+            foreach (var cb in _map.Keys) cb.IsChecked = false;
+            MessageBox.Show("✅ همه‌چیز به پیش‌فرض ویندوز برگشت.\nبرای اثر کامل یک بار سیستم را ری‌استارت کنید.", "Gaming Hub Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        void BtnUncheckAll_Click(object s, RoutedEventArgs e) { foreach (var cb in _map.Keys) cb.IsChecked = false; Log("همه‌ی تیک‌ها برداشته شد."); }
         void BtnRestore_Click(object s, RoutedEventArgs e) { Log(TweakService.RestoreLast(Log)); }
         void BtnRestorePoint_Click(object s, RoutedEventArgs e) { TweakService.CreateRestorePoint(Log); }
 

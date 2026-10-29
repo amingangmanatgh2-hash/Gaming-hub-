@@ -2,7 +2,7 @@
 [Setup]
 AppId={{8F4D2A61-3C7E-4B9A-A5D1-6E2F8C4B7019}
 AppName=Gaming Hub Optimizer
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=Gaming Hub
 AppPublisherURL=https://github.com/amingangmanatgh2-hash/Gaming-hub-
 DefaultDirName={pf}\Gaming Hub Optimizer
@@ -10,7 +10,7 @@ DefaultGroupName=Gaming Hub Optimizer
 UninstallDisplayName=Gaming Hub Optimizer
 SetupIconFile=..\GamingOptimizer\Resources\optimizer.ico
 OutputDir=Output
-OutputBaseFilename=GamingHubOptimizer_Setup_1.0.0
+OutputBaseFilename=GamingHubOptimizer_Setup_1.0.1
 Compression=lzma
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
