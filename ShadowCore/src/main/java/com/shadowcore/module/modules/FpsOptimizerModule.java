@@ -4,37 +4,41 @@ import com.shadowcore.config.ConfigManager;
 import com.shadowcore.config.ShadowCoreConfig;
 import com.shadowcore.module.Module;
 import com.shadowcore.module.ModuleCategory;
+import com.shadowcore.performance.FpsBoostService;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 /**
- * FPS Optimizer — legit performance suite:
+ * FPS Optimizer — legit performance suite v1.1
  * <ul>
- *   <li>Entity culling: skips rendering entities beyond configurable distance
- *       (implemented via {@link com.shadowcore.mixin.EntityCullingMixin}).</li>
- *   <li>Particle limiter: throttles particle spawn (via {@link com.shadowcore.mixin.ParticleMixin}).</li>
- *   <li>Smart render distance: lowers view distance when FPS drops below target,
- *       raises it when stable. Disabled by default to avoid surprise.</li>
+ *   <li>Entity culling: skips rendering entities beyond configurable distance (via mixin).</li>
+ *   <li>Particle limiter: throttles particle spawn (via mixin).</li>
+ *   <li>Smart render distance: lowers view distance when FPS drops below target.</li>
+ *   <li><b>v1.1 New:</b> Aggressive anti-lag mode — graphics FAST, clouds OFF, biome blend 1, shadows OFF, optimized fog.</li>
+ *   <li><b>v1.1 New:</b> Auto-detects Sodium/Lithium/Iris and synergizes instead of conflicting.</li>
  * </ul>
  */
 public class FpsOptimizerModule extends Module {
 
-    // For smart render distance smoothing
     private int fpsSampleAccum = 0;
     private int sampleCount = 0;
     private int tickCounter = 0;
 
     public FpsOptimizerModule(boolean enabled) {
-        super("fps_optimizer", "FPS Optimizer", "Culls distant entities, limits particles, smart render distance.", ModuleCategory.PERFORMANCE, enabled);
+        super("fps_optimizer", "FPS Optimizer", "Culls entities, limits particles, smart distance, aggressive anti-lag.", ModuleCategory.PERFORMANCE, enabled);
     }
 
     @Override
     public void tick(MinecraftClient client) {
         ShadowCoreConfig cfg = ConfigManager.get();
+
+        // Delegate aggressive mode + synergy to service
+        FpsBoostService.tick(client);
+
+        // Smart render distance (only if enabled)
         if (!cfg.smartRenderDistance) return;
 
-        // Sample FPS every 20 ticks (1 sec)
         if (client.getCurrentFps() > 0) {
             fpsSampleAccum += client.getCurrentFps();
             sampleCount++;
@@ -58,8 +62,10 @@ public class FpsOptimizerModule extends Module {
     @Override
     public Text getHudText() {
         ShadowCoreConfig cfg = ConfigManager.get();
+        String mode = cfg.fpsAggressiveMode ? "AGGRESSIVE" : (FpsBoostService.isAggressive() ? "ON" : "Smart");
         String info = cfg.entityCulling ? "Culling:" + cfg.entityCullingDistance : "Culling OFF";
-        if (cfg.particleLimiter) info += " Particles:" + cfg.maxParticlesPerTick;
+        if (cfg.particleLimiter) info += " P:" + cfg.maxParticlesPerTick;
+        info += " [" + mode + "]";
         return Text.literal("FPS Optimizer [" + info + "]").formatted(Formatting.GREEN);
     }
 }

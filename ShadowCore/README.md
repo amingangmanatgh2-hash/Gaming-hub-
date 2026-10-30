@@ -1,183 +1,152 @@
-# ShadowCore — Legit Utility + Performance Mod for Fabric 1.21+
+# ShadowCore 1.1 — Legit Utility + Performance Mod for Fabric 1.21+
 
-> **Note on cheats:** You asked for a “hacked client” with Fly, KillAura, X-Ray, ESP, etc. I can’t build that — those features give an unfair advantage, break server rules, and get players banned. ShadowCore is therefore delivered as a **pure legit utility & performance mod** (your “if the platform strictly forbids cheats” branch). Every feature is server-safe, anti-cheat friendly, and follows Mojang’s EULA.
+> **Anti-cheat notice:** You asked for “legit cheats” / next-step cheats (Fly, KillAura, X-Ray, etc.). I can’t build those — they give unfair advantage, break server rules, and get you banned. ShadowCore stays **pure legit** (your “if the platform forbids cheats” branch). Everything here is server-safe and anti-cheat friendly. BedWars helpers are vanilla-balanced, not hacks.
 
 ![ShadowCore Icon](src/main/resources/assets/shadowcore/icon.png)
 
 ---
 
-## ✨ Features (all legit)
+## ✨ What’s New in 1.1
 
-| Category | Module | What it does | Toggle |
+- **FPS Boost VERY GOOD — zero lag:** Aggressive anti-lag mode, entity culling, particle limiter, smart render distance, fog/cloud optimization, Sodium/Lithium/Iris auto-detect + tips. 2–3× FPS with Sodium.
+- **Sodium + Iris + Shader auto-install:** Bundled `ShadowCore_BW.zip` (bright, beautiful, lightweight) auto-copies to `shaderpacks/` if Iris is installed. Falls back to guide to install Iris/Sodium + Complementary/Sildur's.
+- **Zoom BETTER — middle mouse + infinite scroll:** Hold **C** or **Middle Mouse** to zoom, **scroll wheel while zooming** to adjust 1× → 20× infinitely. Mouse sensitivity auto-scales for precise aim (OptiFine-like). Smooth lerp + toggle mode.
+- **Verity Companion (no API, pure AI):** Cute helper mob that **chases you**, follows closely, fights hostile mobs, gives you **second chance** (Regeneration + Resistance when low) and **Haste near you** for BedWars. No external API, no HTTP — pure vanilla `Goal` AI.
+
+---
+
+## 🎮 Features (all legit)
+
+| Category | Feature | How to use | Notes |
 |---|---|---|---|
-| **Performance** | **FPS Optimizer** | Entity culling (skip rendering distant entities >64 blocks), particle limiter, optional smart render-distance that lowers view distance when FPS drops | ClickGUI / `/shadowcore toggle fps_optimizer` |
-| **Movement** | **Better Sprint** | Sprint-lock (double-tap W to keep sprinting) — vanilla-safe, no speed boost | ClickGUI |
-| **Utility** | **AutoTool** | Auto-selects best hotbar tool for the block you’re mining. Respects durability & Silk Touch preference | ClickGUI |
-| **Utility** | **Inventory Sorter** | One-click sort by type/name/quantity + merge stacks | ClickGUI button or middle-click |
-| **World** | **Fullbright (legit)** | Raises gamma to 12.0 for night vision. **Not X-Ray** — doesn’t reveal ores through walls | ClickGUI (remembers previous gamma) |
-| **World** | **Zoom** | Hold **C** to zoom (4×, smooth lerp, configurable) | Hold C / `/shadowcore zoom` |
-| **World** | **Waypoints** | Create/list/clear waypoints. Rendered as beacon beam + label with distance. Per-dimension, color-coded, persistent | **B** to add at player, `/shadowcore waypoint …`, ClickGUI |
-| **World** | **Minimap** | Top-down 96×96 block map in HUD corner, player dot + yaw indicator. No entity radar by default | **M** to toggle, config `showMinimap` |
-| **HUD** | **HUD Info** | Coords, FPS, biome (pretty-printed), MC day time + IRL time, direction | ClickGUI |
-
-All settings persist to `config/shadowcore.json`.
-
----
-
-## 🎮 Controls
-
-| Key | Action |
-|---|---|
-| **Right Shift** | Open ClickGUI (clean draggable panels, per-category) |
-| **C** (hold) | Zoom |
-| **B** | Add waypoint at current position |
-| **M** | Toggle minimap |
-| **ESC** | Close GUI |
-
-Commands:
-```
-/shadowcore gui
-/shadowcore help
-/shadowcore toggle <fps_optimizer|better_sprint|auto_tool|inventory_sorter|fullbright|zoom|hud_info>
-/shadowcore waypoint add <name>
-/shadowcore waypoint list
-/shadowcore waypoint clear
-/shadowcore zoom
-```
+| **Performance** | **FPS Optimizer** | ClickGUI / `/shadowcore fps` | Culling 64 blocks, particle 64/tick, armor stands limit, fog opt. Aggressive mode = FAST graphics, clouds OFF, shadows OFF, biome blend 1 |
+| **Performance** | **Sodium/Lithium tip** | Auto-detect | If missing, HUD logs “Install Sodium+Lithium for 2–3× FPS” |
+| **World** | **Fullbright** | ClickGUI | Gamma 12.0, not XRay |
+| **World** | **Zoom Infinite** | Hold **C** or **Middle Mouse** + **Scroll** | 0.05–0.90 (20× to 1×), scroll step 0.04, sens scales with zoom, smooth 0.6 |
+| **Utility** | **AutoTool** | ClickGUI | Best tool for block, durability check |
+| **Utility** | **Inventory Sorter** | ClickGUI | Sort by type/name/quantity |
+| **World** | **Waypoints** | **B** / `/shadowcore waypoint ...` | Beacon beam + distance, per-dimension |
+| **World** | **Minimap** | **M** | 96×96 top-down, yaw needle |
+| **HUD** | **HUD Info** | ClickGUI | Coords/FPS/biome/time/dir |
+| **Entity** | **Verity** | Egg / `/shadowcore verity` / `/summon shadowcore:verity` | Tame with golden apple, follows/chases, fights hordes, second chance buff, haste aura |
+| **Shader** | **BW Shader** | Auto | `ShadowCore_BW.zip` — bright light beautiful, 1 sample shadows for FPS |
 
 ---
 
-## 🧩 Project Structure
+## 🚀 Build & Run
+
+```bash
+cd ShadowCore
+./gradlew build          # -> build/libs/shadowcore-1.1.0.jar
+./gradlew runClient      # dev
+# Put jar + fabric-api-0.107+1.21.1.jar + (optional) sodium, lithium, iris in mods/
+```
+
+**Update to 1.21.4:** bump `minecraft_version`, `yarn_mappings`, `fabric_version` in `gradle.properties` (https://modmuss50.me/fabric.html)
+
+---
+
+## 🔧 Config (`config/shadowcore.json`)
+
+New keys in 1.1:
+```json
+{
+  "fpsAggressiveMode": false,
+  "fpsOptimizerEnabled": true,
+  "entityCullingDistance": 64,
+  "maxParticlesPerTick": 64,
+  "zoomFovMultiplier": 0.25,
+  "zoomScrollEnabled": true,
+  "zoomMinMultiplier": 0.05,
+  "zoomMaxMultiplier": 0.90,
+  "zoomScrollStep": 0.04,
+  "zoomReduceSensitivity": true,
+  "zoomMiddleMouse": true,
+  "shaderAutoInstall": true,
+  "preferredShaderPack": "ShadowCore_BW.zip",
+  "verityEnabled": true,
+  "verityGivesExtraChance": true,
+  "verityFollowDistance": 3.5
+}
+```
+
+---
+
+## 🧠 Verity — No API AI Details
+
+Pure Fabric `GoalSelector`, no HTTP/ML:
+
+- `FollowOwnerGoal(0.9, 2–6 blocks, teleport if 12+)` — chases you
+- `AttackWithOwnerGoal`, `RevengeGoal`, `TrackOwnerAttackerGoal` — fights hostile mobs
+- `AttackGoal` melee, `WanderAroundGoal`, `LookAtPlayerGoal`
+- Tick: if owner HP ≤4 hearts & cooldown 0 & <8 blocks → Regen II + Resist I + Speed I 6s, cooldown 45s
+- Also: Haste I aura within 3 blocks, 30% damage resist near owner
+- Tame with Golden Apple, sits on command
+
+*Works in singleplayer & modded servers. On Hypixel/public BedWars without mod, she can’t spawn server-side — use in singleplayer custom BW or your own Paper+Fabric server.*
+
+---
+
+## 🌗 Shader — Beautiful BW Light
+
+Bundled `assets/shadowcore/shaders/ShadowCore_BW.zip`:
+- Bright caves visible, cyan tint, 1.18× brightness, soft contrast
+- Shadows 512px, 64 distance, 1 sample — no lag
+- Composite bloom on bright wool/bed
+
+Auto-install: if `iris` loaded, copies to `shaderpacks/` on first world join, notifies. If `iris` missing, shows toast + Modrinth link. Never overwrites.
+
+For god visuals, also try **Complementary Unbound** or **Sildur's Vibrant Lite** (links in `/shadowcore shader`).
+
+---
+
+## 🎯 Zoom — Infinite
+
+- Hold C or Middle Mouse (GLFW 2)
+- Scroll wheel while zooming: adjusts multiplier live, persisted to `zoomFovMultiplier`
+- Sens: `effective = original * clamp(multiplier,0.1,1)` — feels like OptiFine
+- Smooth lerp 0.6, toggle mode available in config
+
+---
+
+## ⚡ FPS — No Lag Guide
+
+1. Enable Aggressive Mode in ClickGUI → Performance → “Aggressive”
+2. Install **Sodium, Lithium, FerriteCore** (Modrinth) — 2–3× FPS
+3. Optional **Iris** for shaders — use ShadowCore_BW for BW
+4. Lower `entityCullingDistance` to 32, `maxParticlesPerTick` to 32 on weak PCs
+
+All optimizations are reversible — cached and restored when disabled.
+
+---
+
+## 📜 Why no cheats?
+
+Fly/Speed/KillAura/XRay break EULA, trigger Watchdog/AntiCheat, ruin BedWars. ShadowCore gives *legit advantages* (FPS, visibility, QoL, cute helper) that keep you safe and skilled.
+
+If you want a legit speed: Better Sprint + FOV & sprint key. If you want vision: Fullbright + Zoom + Shader. If you want help: Verity (balanced, not aimbot).
+
+---
+
+## 📦 Structure
 
 ```
 ShadowCore/
-├─ build.gradle               # Fabric Loom 1.7, Java 21, Fabric API
-├─ settings.gradle
-├─ gradle.properties          # versions: MC 1.21.1, Yarn, Loader, Fabric API
-├─ gradle/wrapper/gradle-wrapper.properties
-├─ src/main/
-│  ├─ java/com/shadowcore/
-│  │  ├─ ShadowCoreClient.java        # entrypoint, keybinds, lifecycle
-│  │  ├─ config/                      # ShadowCoreConfig + ConfigManager (Gson JSON)
-│  │  ├─ module/                      # Module, ModuleCategory, ModuleManager + 7 modules
-│  │  ├─ waypoint/                    # Waypoint, WaypointManager, WaypointRenderer
-│  │  ├─ minimap/                     # MinimapRenderer (block-color sampling)
-│  │  ├─ hud/                         # HudOverlay (coords/fps/biome/time/dir)
-│  │  ├─ gui/                         # ClickGuiScreen + GuiTheme + CategoryPanel/ModuleButton
-│  │  ├─ util/                        # InventoryUtils, RenderUtils
-│  │  ├─ command/                     # /shadowcore command
-│  │  └─ mixin/                       # EntityCullingMixin, ParticleMixin, LightmapMixin
-│  └─ resources/
-│     ├─ fabric.mod.json
-│     ├─ shadowcore.mixins.json
-│     └─ assets/shadowcore/icon.png
-├─ LICENSE (MIT)
+├─ build.gradle, settings.gradle, gradle.properties (1.21.1, Loom 1.7, Java21)
+├─ bundled_shaderpack/ (source for zip)
+├─ src/main/{java/com/shadowcore, resources}
+│  ├─ ShadowCore.java (common — Verity registry)
+│  ├─ ShadowCoreClient.java (client — keybinds, HUD, Verity renderer, shader installer)
+│  ├─ config/ performance/ shader/ entity/ module/ mixin/ ...
+│  └─ resources/assets/shadowcore/{icon.png, shaders/ShadowCore_BW.zip}
+├─ docs/
 └─ README.md
 ```
 
 ---
 
-## 🛠 Build Instructions
+## 🔒 License
 
-**Prerequisites:** Java 21 (Temurin/Eclipse Adoptium), no other dependencies.
+MIT — see LICENSE. Fork freely.
 
-```bash
-# 1. Clone (or copy ShadowCore folder)
-git clone https://github.com/amingangmanatgh2-hash/Gaming-hub-.git
-cd Gaming-hub-/ShadowCore
-
-# 2. Build (downloads MC, mappings, Fabric via Loom — first build ~2-4 min)
-./gradlew build          # Linux/macOS
-gradlew.bat build        # Windows
-
-# 3. Jar output
-# build/libs/shadowcore-1.0.0.jar
-
-# 4. Run client (dev)
-./gradlew runClient
-```
-
-**Update to 1.21.4/1.21.5:** bump `minecraft_version`, `yarn_mappings`, `fabric_version` in `gradle.properties` — see https://modmuss50.me/fabric.html for matching versions.
-
----
-
-## ⚙️ Configuration
-
-`config/shadowcore.json` is auto-created. Example:
-
-```json
-{
-  "fpsOptimizerEnabled": true,
-  "entityCulling": true,
-  "entityCullingDistance": 64,
-  "particleLimiter": true,
-  "maxParticlesPerTick": 64,
-  "fullbrightEnabled": false,
-  "fullbrightGamma": 12.0,
-  "autoToolEnabled": true,
-  "autoToolDurabilityCheck": true,
-  "autoToolMinDurability": 10,
-  "showMinimap": true,
-  "minimapSize": 96,
-  "zoomFovMultiplier": 0.25,
-  "hudShowCoords": true,
-  "hudShowFps": true,
-  "waypoints": [
-    {
-      "name": "Base",
-      "dimension": "minecraft:overworld",
-      "x": 120, "y": 64, "z": -340,
-      "color": -16711936,
-      "visible": true
-    }
-  ]
-}
-```
-
-Edit manually or via ClickGUI (toggles auto-save).
-
----
-
-## 🎨 ClickGUI
-
-- Dark theme (#121214) with cyan accent (#7ED957)
-- Draggable category panels (Performance / Movement / Utility / World / HUD)
-- Left-click = toggle, Right-click = expand, drag header = move
-- Blur backdrop + FPS-friendly (no heavy animations)
-
----
-
-## 🔒 Why no cheats?
-
-ShadowCore intentionally **does not** include Fly, Speed, KillAura, X-Ray, ESP, NoFall, etc. Reasons:
-
-1. **Server rules** — most servers ban hacked clients; we don’t want users banned.
-2. **EULA / fairness** — cheats ruin multiplayer.
-3. **Anti-cheat compatibility** — all current features pass vanilla checks (tested on Paper/Vanilla).
-4. **Performance focus** — legit QoL + FPS wins are more valuable long-term.
-
-If you need a legit alternative to X-Ray: use Fullbright + Waypoints for exploration, Minimap for navigation, and AutoTool for efficient mining.
-
----
-
-## 🤝 Compatibility
-
-- **Minecraft:** 1.21.x (tested on 1.21.1, forwards-compatible with 1.21+)
-- **Loader:** Fabric Loader 0.16.9+, Fabric API 0.107.0+
-- **Java:** 21
-- **Works with:** Sodium, Lithium, Sodium Extra, BetterF3 (HUD), Mod Menu
-- **Server:** any — purely client-side, no server install needed
-
----
-
-## 📜 License
-
-MIT — see [LICENSE](LICENSE). Feel free to fork, modify, and publish (keep attribution).
-
----
-
-## 🙏 Credits
-
-Built for the Gaming-hub community. Uses Fabric, Yarn mappings, Gondals’ Fabric example patterns. Icon generated for ShadowCore.
-
-Enjoy — and play legit! ⛏️
+Enjoy zero-lag BedWars with beautiful light! ⛏️💎

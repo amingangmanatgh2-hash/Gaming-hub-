@@ -6,7 +6,9 @@
   "client": [
     "LightmapMixin",
     "ParticleMixin",
-    "EntityCullingMixin"
+    "EntityCullingMixin",
+    "MouseScrollMixin",
+    "MouseSensitivityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
