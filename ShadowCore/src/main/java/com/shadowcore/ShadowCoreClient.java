@@ -42,7 +42,8 @@ public class ShadowCoreClient implements ClientModInitializer {
     private static ShadowCoreClient instance;
 
     // ---- Keybinds -----------------------------------------------------------
-    public static KeyBinding openClickGui;
+    public static KeyBinding openClickGui; // Left Shift primary
+    public static KeyBinding openClickGuiRight; // Right Shift alias
     public static KeyBinding zoomKey;
     public static KeyBinding addWaypointKey;
     public static KeyBinding toggleMinimapKey;
@@ -109,8 +110,14 @@ public class ShadowCoreClient implements ClientModInitializer {
     }
 
     private void registerKeybinds() {
+        // Left Shift is now main (your request), Right Shift kept as alias
         openClickGui = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.shadowcore.clickgui",
+                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_SHIFT,
+                "category.shadowcore.main"
+        ));
+        openClickGuiRight = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.shadowcore.clickgui_right",
                 InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT,
                 "category.shadowcore.main"
         ));
@@ -134,7 +141,7 @@ public class ShadowCoreClient implements ClientModInitializer {
     private void onEndTick(MinecraftClient client) {
         if (client.player == null) return;
 
-        while (openClickGui.wasPressed()) client.setScreen(new ClickGuiScreen());
+        while (openClickGui.wasPressed() || openClickGuiRight.wasPressed()) client.setScreen(new ClickGuiScreen());
 
         while (addWaypointKey.wasPressed()) {
             waypointManager.createAtPlayer("Waypoint-" + (waypointManager.size() + 1));
