@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowcore",
+  "version": "${version}",
+  "name": "ShadowCore",
+  "description": "Legit utility & performance mod for Fabric 1.21+ — FPS optimizer, AutoTool, Inventory Sorter, Waypoints, Minimap, Fullbright (legit gamma), Zoom, HUD & clean ClickGUI.",
+  "authors": ["ShadowCore Team"],
+  "contact": {
+    "homepage": "https://github.com/amingangmanatgh2-hash/Gaming-hub-",
+    "sources": "https://github.com/amingangmanatgh2-hash/Gaming-hub-/tree/main/ShadowCore"
+  },
+  "license": "MIT",
+  "icon": "assets/shadowcore/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.shadowcore.ShadowCoreClient"]
+  },
+  "mixins": ["shadowcore.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "1.21.x",
+    "java": ">=21"
+  },
+  "suggests": {
+    "sodium": "*",
+    "lithium": "*"
+  }
+}

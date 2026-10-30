@@ -1,0 +1,16 @@
+.gradle/
+build/
+remappedSrc/
+out/
+run/
+logs/
+.fabric/
+.luntbuild/
+*.log
+.idea/
+*.iml
+.gradle/
+.vscode/
+# Fabric run directories
+fabric-*.dev.jar
+remap-*.jar

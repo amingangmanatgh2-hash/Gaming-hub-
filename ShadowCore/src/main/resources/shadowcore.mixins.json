@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.shadowcore.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "LightmapMixin",
+    "ParticleMixin",
+    "EntityCullingMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "shadowcore.refmap.json"
+}
